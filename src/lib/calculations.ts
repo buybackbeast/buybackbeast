@@ -72,6 +72,20 @@ function getReleaseInputs(
   input: TokenValueCaptureInput,
   releaseHorizonDays: ReleaseHorizonDays,
 ): ReleaseInputs {
+  if (releaseHorizonDays === 7) {
+    return {
+      unlockUsd: input.unlockUsd7d,
+      emissionsUsd: input.inflationaryEmissionsUsd7d,
+    }
+  }
+
+  if (releaseHorizonDays === 30) {
+    return {
+      unlockUsd: input.unlockUsd30d,
+      emissionsUsd: input.inflationaryEmissionsUsd30d,
+    }
+  }
+
   if (releaseHorizonDays === 90) {
     return {
       unlockUsd: input.unlockUsd90d,
