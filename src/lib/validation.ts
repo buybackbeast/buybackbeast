@@ -5,6 +5,7 @@ import {
   EVIDENCE_LEVELS,
   PROGRAM_STATUSES,
   type AdjustmentFactors,
+  type ReleaseHorizonDays,
   type TokenValueCaptureInput,
 } from './types'
 
@@ -66,6 +67,16 @@ export const TokenValueCaptureInputSchema = z
     boughtAndBurnedUsdInPeriod: nonNegativeFiniteNumber.optional(),
     announcedBuybacksUsd: nonNegativeFiniteNumber,
     oneOffBurnsUsd: nonNegativeFiniteNumber,
+    unlockUsd90d: nonNegativeFiniteNumber.nullable().optional().default(null),
+    inflationaryEmissionsUsd90d: nonNegativeFiniteNumber
+      .nullable()
+      .optional()
+      .default(null),
+    unlockUsd180d: nonNegativeFiniteNumber.nullable().optional().default(null),
+    inflationaryEmissionsUsd180d: nonNegativeFiniteNumber
+      .nullable()
+      .optional()
+      .default(null),
     unlockUsd365d: nonNegativeFiniteNumber.nullable(),
     inflationaryEmissionsUsd365d: nonNegativeFiniteNumber.nullable(),
     buybackDestination: z.enum(BUYBACK_DESTINATIONS),
@@ -95,6 +106,41 @@ export const TokenValueCaptureInputSchema = z
         message: 'Bought-and-burned value cannot exceed executed buybacks',
       })
     }
+
+    const cumulativeSeries = [
+      {
+        label: 'Unlock value',
+        values: [input.unlockUsd90d, input.unlockUsd180d, input.unlockUsd365d],
+        paths: ['unlockUsd90d', 'unlockUsd180d', 'unlockUsd365d'],
+      },
+      {
+        label: 'Inflationary emissions',
+        values: [
+          input.inflationaryEmissionsUsd90d,
+          input.inflationaryEmissionsUsd180d,
+          input.inflationaryEmissionsUsd365d,
+        ],
+        paths: [
+          'inflationaryEmissionsUsd90d',
+          'inflationaryEmissionsUsd180d',
+          'inflationaryEmissionsUsd365d',
+        ],
+      },
+    ] as const
+
+    cumulativeSeries.forEach(({ label, values, paths }) => {
+      values.forEach((earlier, earlierIndex) => {
+        values.slice(earlierIndex + 1).forEach((later, offset) => {
+          if (earlier !== null && later !== null && earlier > later) {
+            context.addIssue({
+              code: 'custom',
+              path: [paths[earlierIndex + offset + 1]!],
+              message: `${label} must be cumulative across release horizons`,
+            })
+          }
+        })
+      })
+    })
   })
 
 export const AdjustmentFactorsSchema = z.object({
@@ -106,6 +152,12 @@ export const AdjustmentFactorsSchema = z.object({
   }),
 })
 
+export const ReleaseHorizonDaysSchema = z.union([
+  z.literal(90),
+  z.literal(180),
+  z.literal(365),
+])
+
 export function parseTokenInput(input: unknown): TokenValueCaptureInput {
   return TokenValueCaptureInputSchema.parse(input)
 }
@@ -116,4 +168,8 @@ export function parseTokenInputs(inputs: unknown): TokenValueCaptureInput[] {
 
 export function parseAdjustmentFactors(input: unknown): AdjustmentFactors {
   return AdjustmentFactorsSchema.parse(input)
+}
+
+export function parseReleaseHorizonDays(input: unknown): ReleaseHorizonDays {
+  return ReleaseHorizonDaysSchema.parse(input)
 }

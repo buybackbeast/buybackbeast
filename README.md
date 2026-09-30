@@ -2,7 +2,7 @@
 
 An open-source research workspace for ranking crypto tokens by value returned to holders versus forward unlock pressure.
 
-ValueBeast puts executed buybacks, protocol-funded burns, holder distributions, and the next 12 months of unlocks on one comparable USD basis. The default ranking is transparent: tokens are ordered by net value-capture yield, with every input and adjustment visible.
+ValueBeast puts executed buybacks, protocol-funded burns, holder distributions, and forward unlocks on one comparable USD basis. Researchers can inspect matched 90-day, 180-day, or 365-day windows. The default remains 365 days, and every input and adjustment is visible.
 
 ## Why this exists
 
@@ -12,7 +12,7 @@ ValueBeast answers four questions:
 
 1. How much value was actually captured over the last 12 months?
 2. What percentage of circulating market capitalization does that represent?
-3. How much token value is scheduled to unlock over the next 12 months?
+3. How much token value is scheduled to unlock over the selected forward window?
 4. Does value capture cover that dilution?
 
 ## Core methodology
@@ -26,28 +26,30 @@ gross value capture = effective buybacks
                     + direct economic burns
                     + holder distributions
 
-forward release pressure = next 12 month unlock value
-                         + next 12 month inflationary emissions
+horizon capture = annualized gross value capture × selected days ÷ 365
 
-net value capture = gross value capture − forward release pressure
+forward release pressure = selected-window unlock value
+                         + selected-window inflationary emissions
 
-gross capture yield = gross value capture ÷ circulating market cap
+net value capture = horizon capture − forward release pressure
+
+horizon capture yield = horizon capture ÷ circulating market cap
 
 release dilution = forward release pressure ÷ circulating market cap
 
 net capture yield = net value capture ÷ circulating market cap
 
-release coverage = gross value capture ÷ forward release pressure
+release coverage = horizon capture ÷ forward release pressure
 ```
 
-The default table ranks by net capture yield, then unlock coverage, then gross capture yield. There is no hidden composite score.
+The default table ranks the 365-day window by net capture yield, then unlock coverage, then capture yield. Selecting 90 or 180 days recalculates both capture and release pressure over that same window. There is no hidden composite score.
 
 ### What counts
 
 - **Executed buybacks:** Tokens acquired with protocol or product cash flow during the trailing 12 months.
 - **Direct economic burns:** Tokens destroyed through fee-funded or revenue-funded mechanisms, excluding tokens already counted as bought and burned.
 - **Holder distributions:** Cash, stablecoins, or other assets distributed to token holders.
-- **Forward unlocks and emissions:** The USD value of tokens scheduled to enter circulation over the next 12 months.
+- **Forward unlocks and emissions:** Cumulative USD values for tokens scheduled to enter circulation within 90, 180, and 365 days of the data date.
 - **Announced buybacks:** Displayed for context and excluded from ranking until executed.
 
 ### Destination factors
@@ -57,6 +59,7 @@ An executed buyback does not always remove supply permanently. ValueBeast theref
 ## Features
 
 - Sortable token ranking with gross yield, unlock dilution, net yield, and coverage
+- Explicit 90-day, 180-day, and 365-day release-window comparison, with 365 days as the default
 - Separate executed and announced buyback amounts
 - Explicit protection against bought-and-burned double counting
 - Editable buyback destination factors
@@ -96,6 +99,7 @@ ValueBeast follows a few strict rules to keep comparisons useful:
 - Use executed amounts for the trailing period. Keep budgets and promises separate.
 - Never count the same bought-and-burned tokens as both buybacks and direct burns.
 - State the period and measurement date for every USD figure.
+- Enter cumulative 90-day, 180-day, and 365-day release values independently. Never estimate a shorter window by prorating the 365-day total.
 - Value forward unlocks with the same token price used for market capitalization.
 - Record source URLs and disclose estimates or annualization.
 - Treat treasury-held tokens differently from permanently removed supply.

@@ -14,6 +14,10 @@ const valid = {
   boughtAndBurnedUsdInPeriod: 10,
   announcedBuybacksUsd: 0,
   oneOffBurnsUsd: 0,
+  unlockUsd90d: 0,
+  inflationaryEmissionsUsd90d: 0,
+  unlockUsd180d: 0,
+  inflationaryEmissionsUsd180d: 0,
   unlockUsd365d: 0,
   inflationaryEmissionsUsd365d: 0,
   buybackDestination: 'burn',
@@ -43,6 +47,31 @@ describe('TokenValueCaptureInputSchema', () => {
       ...valid,
       capturePeriodDays: 30,
     })
+    expect(result.success).toBe(false)
+  })
+
+  it('normalizes legacy inputs without shorter release horizons', () => {
+    const legacy: Record<string, unknown> = { ...valid }
+    delete legacy.unlockUsd90d
+    delete legacy.inflationaryEmissionsUsd90d
+    delete legacy.unlockUsd180d
+    delete legacy.inflationaryEmissionsUsd180d
+    const parsed = TokenValueCaptureInputSchema.parse(legacy)
+
+    expect(parsed.unlockUsd90d).toBeNull()
+    expect(parsed.inflationaryEmissionsUsd90d).toBeNull()
+    expect(parsed.unlockUsd180d).toBeNull()
+    expect(parsed.inflationaryEmissionsUsd180d).toBeNull()
+  })
+
+  it('rejects release values that decrease across cumulative horizons', () => {
+    const result = TokenValueCaptureInputSchema.safeParse({
+      ...valid,
+      unlockUsd90d: 20,
+      unlockUsd180d: 10,
+      unlockUsd365d: 30,
+    })
+
     expect(result.success).toBe(false)
   })
 })
