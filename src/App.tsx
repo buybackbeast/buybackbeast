@@ -793,10 +793,10 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
               <th scope="col" className="candidate-rank-col">#</th>
               <th scope="col" className="candidate-token-col">Token</th>
               <th scope="col" className="numeric candidate-market-col">Market cap (CMC)</th>
-              <th scope="col" className="candidate-capture-col">Value capture</th>
-              <th scope="col" className="numeric">{releaseHorizonDays}d capture</th>
-              <th scope="col" className="numeric">{releaseHorizonDays}d pressure</th>
-              <th scope="col" className="numeric">Net yield</th>
+              <th scope="col" className="candidate-capture-col">Method</th>
+              <th scope="col" className="numeric">Value returned</th>
+              <th scope="col" className="numeric">Tokens released</th>
+              <th scope="col" className="numeric">Net vs market cap</th>
               <th scope="col" className="candidate-details-col" aria-label="Details" />
             </tr>
           </thead>
