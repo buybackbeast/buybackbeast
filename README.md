@@ -68,7 +68,7 @@ An executed buyback does not always remove supply permanently. VALUEBEAST theref
 - Explicit protection against bought-and-burned double counting
 - Editable buyback destination factors
 - Evidence and mechanism filters
-- Official-source research candidates that prefill, but never bypass, the validated token workflow
+- Source-linked research candidates with dated market and release prefills that never bypass the validated token workflow
 - Token add and edit workflow with source URLs and measurement dates
 - CSV and JSON import and export
 - Local browser storage with no account, wallet, or API key
@@ -76,7 +76,7 @@ An executed buyback does not always remove supply permanently. VALUEBEAST theref
 - Responsive desktop and mobile interface
 - Unit-tested calculations and automated GitHub checks
 
-The bundled ranking dataset is fictional and exists only to demonstrate the calculations. Research candidates are separate mechanism-qualified leads, not ranking rows. A candidate enters the ranking only after a user completes and saves a sourced quantitative snapshot.
+The bundled ranking dataset is fictional and exists only to demonstrate the calculations. Research candidates and their dated source snapshots remain separate from ranking rows. A candidate enters the ranking only after a user completes and saves the remaining inputs.
 
 ## Run locally
 
@@ -109,6 +109,7 @@ VALUEBEAST follows a few strict rules to keep comparisons useful:
 - Record source URLs and disclose estimates or annualization.
 - Treat treasury-held tokens differently from permanently removed supply.
 - Never convert a research candidate into a score with placeholder zeroes. Missing market-cap, capture, unlock, or emissions inputs must remain incomplete until sourced.
+- Treat a provider's completed original vesting schedule separately from later treasury vesting contracts or governance-authorized releases.
 
 See [the methodology](docs/methodology.md) for edge cases and a worked example.
 

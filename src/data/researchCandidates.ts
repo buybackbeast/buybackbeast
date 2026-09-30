@@ -4,6 +4,7 @@ import type {
   ProgramStatus,
   TokenValueCaptureInput,
 } from '../lib'
+import { getSourcedCandidateSnapshot } from './sourcedSnapshots'
 
 type RecurringCaptureField =
   | 'executedBuybacksUsdInPeriod'
@@ -58,9 +59,9 @@ export const RESEARCH_CANDIDATES = [
     excludedOneOff:
       'The 100M UNI retroactive treasury burn is non-recurring and must remain outside the recurring score.',
     releaseCaveat:
-      'The executed proposal authorized up to 40M treasury UNI for a two-year vesting contract, initially 5M per quarter. Unvested UNI remains in treasury and the allowance can be revoked, so count only expected forward releases.',
+      'DefiLlama marks the original UNI allocation vesting 100% unlocked. At the September 30 snapshot, the separate growth-budget contract still had a 5M UNI quarterly amount and 25M UNI allowance. Its allowance can be revoked, so scheduled tranches are forward pressure, not guaranteed sales.',
     editorGuidance:
-      'Enter the USD value of UNI actually burned in executed releaser transactions under recurring direct burns, valued at each burn timestamp. Do not substitute gross fees or enter the same activity as executed buybacks. Keep the 100M treasury burn under one-off burns.',
+      'The dated market-cap and release snapshot is prefilled from DefiLlama plus the official UNIVesting schedule. Enter the USD value of UNI actually burned in executed releaser transactions under recurring direct burns, valued at each burn timestamp. Do not substitute gross fees or count the 100M treasury burn as recurring.',
     accounting: {
       recurringCaptureField: 'recurringDirectBurnsUsdInPeriod',
       oneOffContextField: 'oneOffBurnsUsd',
@@ -84,12 +85,24 @@ export const RESEARCH_CANDIDATES = [
         url: 'https://gov.uniswap.org/t/temp-check-activate-v4-protocol-fees/26162',
       },
       {
+        label: 'Uniswap Labs UNI burn tracker',
+        url: 'https://dune.com/uniswaplabs/uni-burn-tracker-l1l2',
+      },
+      {
         label: 'DUNI year-end financial statement',
         url: 'https://vote.uniswapfoundation.org/forums/7/duni-q4-and-year-end-2025-financial-statements-and-tax-update',
       },
       {
         label: 'UNIVesting contract',
         url: 'https://github.com/Uniswap/protocol-fees/blob/main/src/UNIVesting.sol',
+      },
+      {
+        label: 'DefiLlama UNI unlock schedule',
+        url: 'https://defillama.com/unlocks/uniswap',
+      },
+      {
+        label: 'Official UNI token supply documentation',
+        url: 'https://developers.uniswap.org/docs/ecosystem/governance/uni',
       },
     ],
   },
@@ -99,19 +112,59 @@ export function createCandidateEditorSeed(candidate: ResearchCandidate): Pick<
   TokenValueCaptureInput,
   | 'name'
   | 'symbol'
+  | 'circulatingMarketCapUsd'
+  | 'fdvUsd'
+  | 'unlockUsd90d'
+  | 'inflationaryEmissionsUsd90d'
+  | 'unlockUsd180d'
+  | 'inflationaryEmissionsUsd180d'
+  | 'unlockUsd365d'
+  | 'inflationaryEmissionsUsd365d'
   | 'buybackDestination'
   | 'evidenceLevel'
   | 'programStatus'
+  | 'dataDate'
   | 'sourceUrls'
 > {
+  const snapshot = getSourcedCandidateSnapshot(candidate.id)
+
   return {
     name: candidate.name,
     symbol: candidate.symbol,
+    circulatingMarketCapUsd: snapshot?.prefill.circulatingMarketCapUsd ?? 0,
+    fdvUsd: snapshot?.prefill.fdvUsd ?? 0,
+    unlockUsd90d: snapshot?.prefill.unlockUsd90d ?? null,
+    inflationaryEmissionsUsd90d: snapshot?.prefill.inflationaryEmissionsUsd90d ?? null,
+    unlockUsd180d: snapshot?.prefill.unlockUsd180d ?? null,
+    inflationaryEmissionsUsd180d: snapshot?.prefill.inflationaryEmissionsUsd180d ?? null,
+    unlockUsd365d: snapshot?.prefill.unlockUsd365d ?? null,
+    inflationaryEmissionsUsd365d: snapshot?.prefill.inflationaryEmissionsUsd365d ?? null,
     buybackDestination: candidate.buybackDestination,
     // Mechanism evidence does not prove every numeric snapshot input.
     evidenceLevel: 'estimate',
     programStatus: candidate.programStatus,
-    // Mechanism references are not enough to source a quantitative snapshot.
-    sourceUrls: [],
+    dataDate: snapshot?.prefill.dataDate ?? '',
+    sourceUrls: snapshot?.sources.map((source) => source.url) ?? [],
   }
+}
+
+export function getCandidateCaptureValidationError(
+  candidate: ResearchCandidate,
+  input: Pick<
+    TokenValueCaptureInput,
+    | 'capturePeriodDays'
+    | 'executedBuybacksUsdInPeriod'
+    | 'recurringDirectBurnsUsdInPeriod'
+    | 'holderDistributionsUsdInPeriod'
+  >,
+): string | null {
+  if (input.capturePeriodDays < 90 || input.capturePeriodDays > 365) {
+    return 'Enter an observation window between 90 and 365 days.'
+  }
+
+  if (input[candidate.accounting.recurringCaptureField] <= 0) {
+    return `Enter a positive executed capture amount for the verified ${candidate.symbol} mechanism.`
+  }
+
+  return null
 }

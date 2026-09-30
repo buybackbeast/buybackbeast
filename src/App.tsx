@@ -30,8 +30,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   RESEARCH_CANDIDATES,
   createCandidateEditorSeed,
+  getCandidateCaptureValidationError,
   type ResearchCandidate,
 } from './data/researchCandidates'
+import { getSourcedCandidateSnapshot } from './data/sourcedSnapshots'
 import {
   BUYBACK_DESTINATIONS,
   DEFAULT_ADJUSTMENT_FACTORS,
@@ -583,15 +585,16 @@ function ResearchCandidates({ candidates, ranked, onPrefill, onEdit }: ResearchC
     <section className="research-candidates" aria-labelledby="research-candidates-title">
       <div className="research-candidates-header">
         <div>
-          <div className="research-kicker">Mechanism-qualified · snapshot pending</div>
+          <div className="research-kicker">Mechanism-qualified · sourced snapshots</div>
           <h2 id="research-candidates-title">Research candidates</h2>
         </div>
-        <p>Official-source mechanisms awaiting complete same-window inputs. Candidates never affect rankings until you review and save them.</p>
+        <p>Dated source snapshots can prefill known inputs. Candidates never affect rankings until every remaining field is reviewed and saved.</p>
       </div>
 
       <ul className="research-candidate-list">
         {candidates.map((candidate) => {
           const existing = ranked.find((row) => row.input.symbol.toUpperCase() === candidate.symbol)
+          const snapshot = getSourcedCandidateSnapshot(candidate.id)
           const datasetStatus = existing
             ? existing.rank === null ? 'In dataset · NR' : `Ranked #${existing.rank}`
             : 'Not ranked'
@@ -620,11 +623,12 @@ function ResearchCandidates({ candidates, ranked, onPrefill, onEdit }: ResearchC
                 <div><dt>Recurring evidence</dt><dd>{candidate.recurringEvidence}</dd></div>
                 <div><dt>Excluded context</dt><dd>{candidate.excludedOneOff}</dd></div>
                 <div><dt>Release caveat</dt><dd>{candidate.releaseCaveat}</dd></div>
+                {snapshot && <div><dt>Snapshot</dt><dd>{snapshot.summary}</dd></div>}
               </dl>
 
               <div className="research-candidate-actions">
                 <details className="candidate-sources">
-                  <summary>{candidate.sources.length} official sources</summary>
+                  <summary>{candidate.sources.length} sources</summary>
                   <div>
                     {candidate.sources.map((source) => (
                       <a href={source.url} key={source.url} target="_blank" rel="noreferrer" aria-label={`${source.label}, opens in a new tab`}>
@@ -644,7 +648,9 @@ function ResearchCandidates({ candidates, ranked, onPrefill, onEdit }: ResearchC
               </div>
 
               {!existing && (
-                <p className="candidate-disclaimer">Mechanism verified, score not calculated. Market cap, executed capture, and 90/180/365-day release inputs remain for review.</p>
+                <p className="candidate-disclaimer">{snapshot
+                  ? `Market cap and 90/180/365-day release fields have a dated prefill. Executed capture and its observation window still require review before ${candidate.symbol} can be ranked.`
+                  : 'Mechanism verified, score not calculated. Market cap, executed capture, and release inputs remain for review.'}</p>
               )}
             </li>
           )
@@ -669,6 +675,7 @@ function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays,
   const [draft, setDraft] = useState<TokenValueCaptureInput>(() => ({ ...token, sourceUrls: [...token.sourceUrls] }))
   const [error, setError] = useState('')
   const [sources, setSources] = useState(token.sourceUrls.join('\n'))
+  const candidateSnapshot = candidate ? getSourcedCandidateSnapshot(candidate.id) : undefined
 
   useEffect(() => {
     const drawerElement = drawerRef.current
@@ -719,6 +726,11 @@ function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays,
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
     try {
+      if (candidate) {
+        const candidateError = getCandidateCaptureValidationError(candidate, draft)
+        if (candidateError) throw new Error(candidateError)
+      }
+
       const parsed = parseTokenInputs([{
         ...draft,
         id: editingId ?? `token-${Date.now()}`,
@@ -751,7 +763,7 @@ function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays,
               <Info size={16} />
               <div>
                 <strong>{candidate.symbol} research draft</strong>
-                <span>Identity, mechanism classification, and status were prefilled. Snapshot evidence defaults to Estimate until your numeric sources justify a stronger label. {candidate.editorGuidance} Complete every numeric field, set a data date, and add sources for the quantitative snapshot before saving. Blank releases mean unknown, not zero.</span>
+                <span>{candidateSnapshot ? `A sourced ${candidateSnapshot.asOfDate} market and release snapshot was prefilled. ` : 'Identity and mechanism metadata were prefilled. '}Evidence defaults to Estimate until the complete numeric record is reviewed. {candidate.editorGuidance} Fill the executed capture amount and observation window, then review the date and sources before saving. Blank releases mean unknown, not zero.</span>
                 <div className="candidate-prefill-sources">
                   {candidate.sources.map((source) => (
                     <a href={source.url} key={source.url} target="_blank" rel="noreferrer" aria-label={`${source.label}, opens in a new tab`}>{source.label}<ExternalLink size={11} /></a>
@@ -773,11 +785,11 @@ function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays,
               </div>
               <div className="field">
                 <label htmlFor="market-cap">Circulating market cap</label>
-                <input id="market-cap" className="input" autoFocus={Boolean(candidate)} type="number" min="1" required value={draft.circulatingMarketCapUsd || ''} onChange={(event) => setNumber('circulatingMarketCapUsd', event.target.value)} placeholder="500000000" />
+                <input id="market-cap" className="input" type="number" min="1" required value={draft.circulatingMarketCapUsd || ''} onChange={(event) => setNumber('circulatingMarketCapUsd', event.target.value)} placeholder="500000000" />
               </div>
               <div className="field">
                 <label htmlFor="fdv">Fully diluted value</label>
-                <input id="fdv" className="input" type="number" min="0" required value={draft.fdvUsd || ''} onChange={(event) => setNumber('fdvUsd', event.target.value)} placeholder="900000000" />
+                <input id="fdv" className="input" type="number" min="0" required value={draft.fdvUsd} onChange={(event) => setNumber('fdvUsd', event.target.value)} placeholder="900000000" />
               </div>
             </div>
           </section>
@@ -787,20 +799,20 @@ function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays,
             <div className="form-grid">
               <div className="field">
                 <label htmlFor="period-days">Observed period, days</label>
-                <input id="period-days" className="input" type="number" min="90" max="365" required value={draft.capturePeriodDays || ''} onChange={(event) => setNumber('capturePeriodDays', event.target.value)} />
+                <input id="period-days" className="input" autoFocus={Boolean(candidate)} type="number" min="90" max="365" required value={candidate && draft.capturePeriodDays === 0 ? '' : draft.capturePeriodDays} onChange={(event) => setNumber('capturePeriodDays', event.target.value)} />
                 <p className="field-hint">Periods below 365 days are marked Provisional.</p>
               </div>
               <div className="field">
                 <label htmlFor="buybacks">Executed buybacks in period</label>
-                <input id="buybacks" className="input" type="number" min="0" required value={draft.executedBuybacksUsdInPeriod || ''} onChange={(event) => setNumber('executedBuybacksUsdInPeriod', event.target.value)} />
+                <input id="buybacks" className="input" type="number" min="0" required value={draft.executedBuybacksUsdInPeriod} onChange={(event) => setNumber('executedBuybacksUsdInPeriod', event.target.value)} />
               </div>
               <div className="field">
                 <label htmlFor="direct-burns">Recurring direct burns in period</label>
-                <input id="direct-burns" className="input" type="number" min="0" required value={draft.recurringDirectBurnsUsdInPeriod || ''} onChange={(event) => setNumber('recurringDirectBurnsUsdInPeriod', event.target.value)} />
+                <input id="direct-burns" className="input" type="number" min="0" required value={candidate && draft.recurringDirectBurnsUsdInPeriod === 0 ? '' : draft.recurringDirectBurnsUsdInPeriod} onChange={(event) => setNumber('recurringDirectBurnsUsdInPeriod', event.target.value)} />
               </div>
               <div className="field">
                 <label htmlFor="distributions">Holder distributions in period</label>
-                <input id="distributions" className="input" type="number" min="0" required value={draft.holderDistributionsUsdInPeriod || ''} onChange={(event) => setNumber('holderDistributionsUsdInPeriod', event.target.value)} />
+                <input id="distributions" className="input" type="number" min="0" required value={draft.holderDistributionsUsdInPeriod} onChange={(event) => setNumber('holderDistributionsUsdInPeriod', event.target.value)} />
               </div>
               <div className="field">
                 <label htmlFor="destination">Buyback destination</label>
@@ -810,7 +822,7 @@ function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays,
               </div>
               <div className="field">
                 <label htmlFor="bought-burned">Bought and burned subset</label>
-                <input id="bought-burned" className="input" type="number" min="0" value={draft.boughtAndBurnedUsdInPeriod || ''} onChange={(event) => setNumber('boughtAndBurnedUsdInPeriod', event.target.value)} />
+                <input id="bought-burned" className="input" type="number" min="0" value={draft.boughtAndBurnedUsdInPeriod ?? ''} onChange={(event) => setNumber('boughtAndBurnedUsdInPeriod', event.target.value)} />
                 <p className="field-hint">Context only. Already included in buybacks.</p>
               </div>
             </div>
@@ -855,12 +867,12 @@ function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays,
             <div className="form-grid contextual-grid">
               <div className="field">
                 <label htmlFor="announced-buybacks">Announced buybacks</label>
-                <input id="announced-buybacks" className="input" type="number" min="0" required value={draft.announcedBuybacksUsd || ''} onChange={(event) => setNumber('announcedBuybacksUsd', event.target.value)} />
+                <input id="announced-buybacks" className="input" type="number" min="0" required value={draft.announcedBuybacksUsd} onChange={(event) => setNumber('announcedBuybacksUsd', event.target.value)} />
                 <p className="field-hint">Shown as context and excluded from rank.</p>
               </div>
               <div className="field">
                 <label htmlFor="one-off-burns">One-off burns</label>
-                <input id="one-off-burns" className="input" type="number" min="0" required value={draft.oneOffBurnsUsd || ''} onChange={(event) => setNumber('oneOffBurnsUsd', event.target.value)} />
+                <input id="one-off-burns" className="input" type="number" min="0" required value={draft.oneOffBurnsUsd} onChange={(event) => setNumber('oneOffBurnsUsd', event.target.value)} />
                 <p className="field-hint">Non-recurring events are excluded from rank.</p>
               </div>
             </div>
@@ -1196,7 +1208,6 @@ function App() {
       ...seed,
       id: undefined,
       capturePeriodDays: 0,
-      dataDate: '',
     })
     setDraftCandidate(candidate)
     setDrawer('token')
