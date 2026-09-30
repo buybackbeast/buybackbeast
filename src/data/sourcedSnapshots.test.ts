@@ -22,6 +22,8 @@ describe('sourced candidate snapshots', () => {
     })
     expect(snapshot?.releaseData).not.toHaveProperty('circulatingMarketCapUsd')
     expect(snapshot?.releaseData).not.toHaveProperty('fdvUsd')
+    expect(snapshot?.releaseData.unlockUsd7d).toBe(5_000_000 * 9.07)
+    expect(snapshot?.releaseData.unlockUsd30d).toBe(5_000_000 * 9.07)
     expect(snapshot?.releaseData.unlockUsd90d).toBe(5_000_000 * 9.07)
     expect(snapshot?.releaseData.unlockUsd180d).toBe(10_000_000 * 9.07)
     expect(snapshot?.releaseData.unlockUsd365d).toBe(20_000_000 * 9.07)
@@ -34,6 +36,8 @@ describe('sourced candidate snapshots', () => {
   it('records verified inactive inflation separately from treasury releases', () => {
     const emissions = getSourcedCandidateSnapshot('uniswap')?.releaseData
 
+    expect(emissions?.inflationaryEmissionsUsd7d).toBe(0)
+    expect(emissions?.inflationaryEmissionsUsd30d).toBe(0)
     expect(emissions?.inflationaryEmissionsUsd90d).toBe(0)
     expect(emissions?.inflationaryEmissionsUsd180d).toBe(0)
     expect(emissions?.inflationaryEmissionsUsd365d).toBe(0)

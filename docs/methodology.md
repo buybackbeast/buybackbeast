@@ -6,11 +6,11 @@ BUYBACKBEAST compares backward-looking value capture with forward-looking diluti
 
 - An official result uses actual value capture from the trailing 365 days ending on the dataset's `as of` date.
 - A dataset with 90 to 364 consecutive days can show an annualized recurring run rate, but the result is labeled provisional.
-- The release window can be 90, 180, or 365 days beginning on that same date. The default is 365 days.
+- The release window can be 7, 30, 90, 180, or 365 days beginning on that same date. The default is 365 days.
 - Annualized effective capture is scaled to the selected release window before net yield and coverage are calculated.
 - Market capitalization, FDV, and unlock value should use the same token price and timestamp.
 
-Mixing periods can distort the result. BUYBACKBEAST therefore compares a 90-day capture run rate with 90-day releases, a 180-day run rate with 180-day releases, and a 365-day run rate with 365-day releases. A shorter capture observation period can be annualized, but it remains labeled provisional. One-off burns and capital returns are never annualized.
+Mixing periods can distort the result. BUYBACKBEAST therefore scales the capture run rate to the selected 7-day, 30-day, 90-day, 180-day, or 365-day window and compares it with releases over that exact window. A shorter capture observation period can be annualized, but it remains labeled provisional. One-off burns and capital returns are never annualized.
 
 ## Value-capture inputs
 
@@ -43,7 +43,7 @@ These factors are explicit assumptions, not facts. Users can change them and obs
 
 ## Unlock input
 
-Forward release pressure includes team, investor, treasury, ecosystem, and other previously non-circulating allocations expected to become transferable during the selected 90-day, 180-day, or 365-day window. It also includes inflationary emissions expected under the current protocol rules.
+Forward release pressure includes team, investor, treasury, ecosystem, and other previously non-circulating allocations expected to become transferable during the selected 7-day, 30-day, 90-day, 180-day, or 365-day window. It also includes inflationary emissions expected under the current protocol rules.
 
 ```text
 unlock value = unlocked token amount × measurement-date token price
@@ -53,7 +53,7 @@ emission value = newly issued token amount × measurement-date token price
 release pressure = unlock value + emission value
 ```
 
-Each horizon is cumulative from the data date. Known values should satisfy `90d ≤ 180d ≤ 365d` separately for unlocks and emissions. BUYBACKBEAST never prorates a 365-day total to estimate a shorter horizon because unlock schedules are often uneven.
+Each horizon is cumulative from the data date. Known values should satisfy `7d ≤ 30d ≤ 90d ≤ 180d ≤ 365d` separately for unlocks and emissions. BUYBACKBEAST never prorates a longer-window total to estimate a shorter horizon because unlock schedules are often uneven.
 
 Release pressure measures potential dilution, not guaranteed selling. BUYBACKBEAST subtracts it to provide a conservative comparison with value capture over the same period. If either forward component is unknown for the selected horizon, the token is marked `NR` instead of treating missing data as zero. Missing data at another horizon does not prevent ranking the selected one.
 
@@ -127,7 +127,7 @@ The table uses CoinMarketCap as the single market-cap provider for all 18 candid
 
 For Uniswap specifically, the bundled fallback snapshot records a $5.480 billion CoinMarketCap circulating market capitalization. The hourly payload replaces that display value when available. DefiLlama marks 100% completion of the original allocation vesting. The separate $9.07 valuation price is retained only to reproduce the previously verified UNIVesting release amounts and is not used as the table's market-cap source.
 
-The separate UNIVesting contract releases UNI on calendar-quarter boundaries. At Ethereum block 26,091,194 on September 30, 2026, its quarterly amount was still 5 million UNI, its last-unlock boundary was July 1, and the treasury owner had 25 million UNI of allowance remaining. Using the half-open interval `(snapshot date, horizon end]`, the snapshot includes 5 million UNI over 90 days, 10 million over 180 days, and 20 million over 365 days. At $9.07, those values are $45.35 million, $90.70 million, and $181.40 million. The allowance can be revoked and the quarterly amount can be changed under the contract rules, so these are scheduled pressure rather than guaranteed sales. Current official UNI documentation reports no active inflation, so the snapshot records verified zero inflationary emissions separately from treasury releases.
+The separate UNIVesting contract releases UNI on calendar-quarter boundaries. At Ethereum block 26,091,194 on September 30, 2026, its quarterly amount was still 5 million UNI, its last-unlock boundary was July 1, and the treasury owner had 25 million UNI of allowance remaining. Using the half-open interval `(snapshot date, horizon end]`, the October 1 boundary places 5 million UNI inside the 7-day, 30-day, and 90-day windows. The snapshot then includes 10 million UNI over 180 days and 20 million over 365 days. At $9.07, those values are $45.35 million, $45.35 million, $45.35 million, $90.70 million, and $181.40 million. The allowance can be revoked and the quarterly amount can be changed under the contract rules, so these are scheduled pressure rather than guaranteed sales. Current official UNI documentation reports no active inflation, so the snapshot records verified zero inflationary emissions separately from treasury releases.
 
 The fixed-block JSON-RPC requests and raw responses used for that state check are committed at [`docs/evidence/uniswap-univesting-2026-09-30.json`](evidence/uniswap-univesting-2026-09-30.json), including the owner and `allowance(owner, vesting)` calldata.
 

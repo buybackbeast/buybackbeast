@@ -2,6 +2,10 @@ import type { TokenValueCaptureInput } from '../lib'
 
 type ReleaseData = Pick<
   TokenValueCaptureInput,
+  | 'unlockUsd7d'
+  | 'inflationaryEmissionsUsd7d'
+  | 'unlockUsd30d'
+  | 'inflationaryEmissionsUsd30d'
   | 'unlockUsd90d'
   | 'inflationaryEmissionsUsd90d'
   | 'unlockUsd180d'
@@ -47,18 +51,22 @@ export const SOURCED_CANDIDATE_SNAPSHOTS = [
     asOfDate: '2026-09-30',
     valuationPriceUsd: UNISWAP_PRICE_USD,
     releaseData: {
-      // Verified growth-budget schedule after the snapshot: 5M / 10M / 20M UNI.
+      // Verified growth-budget schedule after the snapshot: 5M / 5M / 5M / 10M / 20M UNI.
+      unlockUsd7d: 5_000_000 * UNISWAP_PRICE_USD,
+      unlockUsd30d: 5_000_000 * UNISWAP_PRICE_USD,
       unlockUsd90d: 5_000_000 * UNISWAP_PRICE_USD,
       unlockUsd180d: 10_000_000 * UNISWAP_PRICE_USD,
       unlockUsd365d: 20_000_000 * UNISWAP_PRICE_USD,
       // Governance can mint, but Uniswap's current documentation reports no active inflation.
+      inflationaryEmissionsUsd7d: 0,
+      inflationaryEmissionsUsd30d: 0,
       inflationaryEmissionsUsd90d: 0,
       inflationaryEmissionsUsd180d: 0,
       inflationaryEmissionsUsd365d: 0,
       dataDate: '2026-09-30',
     },
     summary:
-      'DefiLlama marks the original UNI vesting schedule 100% unlocked. A separate onchain-verified UNIVesting growth budget schedules 5M, 10M, and 20M UNI, valued at $45.35M, $90.70M, and $181.40M across the next 90, 180, and 365 days.',
+      'DefiLlama marks the original UNI vesting schedule 100% unlocked. A separate onchain-verified UNIVesting growth budget schedules 5M, 5M, 5M, 10M, and 20M UNI across the next 7, 30, 90, 180, and 365 days.',
     methodology:
       'Uses the half-open interval (snapshot date, horizon end]. At Ethereum block 26,091,194 the contract still had a 5M UNI quarterly amount, a July 1 last-unlock boundary, and 25M UNI of owner allowance. The $9.07 valuation price is retained only to reproduce the forward release values. Releases remain revocable.',
     onchainVerification: {

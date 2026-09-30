@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { TokenValueCaptureInputSchema } from './validation'
+import { parseReleaseHorizonDays, TokenValueCaptureInputSchema } from './validation'
 
 const valid = {
   name: 'Test',
@@ -14,6 +14,10 @@ const valid = {
   boughtAndBurnedUsdInPeriod: 10,
   announcedBuybacksUsd: 0,
   oneOffBurnsUsd: 0,
+  unlockUsd7d: 0,
+  inflationaryEmissionsUsd7d: 0,
+  unlockUsd30d: 0,
+  inflationaryEmissionsUsd30d: 0,
   unlockUsd90d: 0,
   inflationaryEmissionsUsd90d: 0,
   unlockUsd180d: 0,
@@ -52,12 +56,20 @@ describe('TokenValueCaptureInputSchema', () => {
 
   it('normalizes legacy inputs without shorter release horizons', () => {
     const legacy: Record<string, unknown> = { ...valid }
+    delete legacy.unlockUsd7d
+    delete legacy.inflationaryEmissionsUsd7d
+    delete legacy.unlockUsd30d
+    delete legacy.inflationaryEmissionsUsd30d
     delete legacy.unlockUsd90d
     delete legacy.inflationaryEmissionsUsd90d
     delete legacy.unlockUsd180d
     delete legacy.inflationaryEmissionsUsd180d
     const parsed = TokenValueCaptureInputSchema.parse(legacy)
 
+    expect(parsed.unlockUsd7d).toBeNull()
+    expect(parsed.inflationaryEmissionsUsd7d).toBeNull()
+    expect(parsed.unlockUsd30d).toBeNull()
+    expect(parsed.inflationaryEmissionsUsd30d).toBeNull()
     expect(parsed.unlockUsd90d).toBeNull()
     expect(parsed.inflationaryEmissionsUsd90d).toBeNull()
     expect(parsed.unlockUsd180d).toBeNull()
@@ -67,11 +79,18 @@ describe('TokenValueCaptureInputSchema', () => {
   it('rejects release values that decrease across cumulative horizons', () => {
     const result = TokenValueCaptureInputSchema.safeParse({
       ...valid,
+      unlockUsd7d: 5,
+      unlockUsd30d: 4,
       unlockUsd90d: 20,
-      unlockUsd180d: 10,
+      unlockUsd180d: 25,
       unlockUsd365d: 30,
     })
 
     expect(result.success).toBe(false)
+  })
+
+  it('accepts 7-day and 30-day release horizons', () => {
+    expect(parseReleaseHorizonDays(7)).toBe(7)
+    expect(parseReleaseHorizonDays(30)).toBe(30)
   })
 })
