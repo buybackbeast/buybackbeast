@@ -280,7 +280,7 @@ h1 {
 
 .research-candidates-header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
   padding: 20px 20px 14px;
@@ -292,14 +292,6 @@ h1 {
   letter-spacing: -0.025em;
 }
 
-.research-candidates-header p {
-  max-width: 610px;
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
-}
-
 .research-kicker {
   color: var(--cyan);
   font-family: var(--mono);
@@ -307,6 +299,75 @@ h1 {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.market-refresh-card {
+  min-width: 310px;
+  padding: 11px 14px 10px;
+  border: 1px solid rgba(98, 230, 242, 0.22);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(98, 230, 242, 0.08), rgba(18, 25, 35, 0.74));
+}
+
+.market-refresh-primary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.market-refresh-dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--green);
+  box-shadow: 0 0 0 4px rgba(73, 214, 159, 0.1), 0 0 16px rgba(73, 214, 159, 0.38);
+}
+
+.market-refresh-label {
+  margin-bottom: 1px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.market-refresh-value {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.market-refresh-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.market-refresh-card.refreshing .market-refresh-dot {
+  background: var(--cyan);
+  box-shadow: 0 0 0 4px rgba(98, 230, 242, 0.1), 0 0 16px rgba(98, 230, 242, 0.42);
+}
+
+.market-refresh-card.delayed .market-refresh-dot {
+  background: var(--amber);
+  box-shadow: 0 0 0 4px rgba(243, 187, 84, 0.1), 0 0 16px rgba(243, 187, 84, 0.34);
+}
+
+.market-refresh-card.loading .market-refresh-dot,
+.market-refresh-card.fallback .market-refresh-dot {
+  background: var(--muted-2);
+  box-shadow: 0 0 0 4px rgba(105, 121, 141, 0.1);
 }
 
 .candidate-toolbar {
@@ -1785,6 +1846,11 @@ tr:hover .sticky-cell {
     flex-direction: column;
     gap: 8px;
     padding: 16px 14px 12px;
+  }
+
+  .market-refresh-card {
+    width: 100%;
+    min-width: 0;
   }
 
   .candidate-toolbar {
