@@ -389,6 +389,21 @@ h1 {
   flex: 0 1 330px;
 }
 
+.candidate-metric-guide {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding: 0 20px 14px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.candidate-metric-guide strong {
+  color: #dce4ed;
+  font-family: var(--mono);
+}
+
 .candidate-table-scroll {
   position: relative;
   overflow-x: auto;
@@ -614,9 +629,30 @@ h1 {
   background: rgba(24, 33, 45, 0.7);
 }
 
-.pending-value {
+.candidate-metric-value,
+.candidate-net-value {
+  display: inline-block;
+  color: #e6edf5;
+  font-size: 14px;
+  font-weight: 680;
+  letter-spacing: -0.02em;
+}
+
+.candidate-metric-value.estimated,
+.candidate-net-value.estimated {
+  font-style: normal;
+}
+
+.candidate-net-value.positive {
+  color: var(--green);
+}
+
+.candidate-net-value.negative {
+  color: var(--red);
+}
+
+.candidate-net-value.unavailable {
   color: var(--muted);
-  font-size: 12px;
 }
 
 .candidate-detail-toggle {

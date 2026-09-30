@@ -167,7 +167,7 @@ export const RESEARCH_CANDIDATES = [
     recurringEvidence:
       'The August 2026 report showed 2,746,334 CAKE burned against 674,316 minted, the 36th consecutive month of net supply reduction.',
     excludedOneOff:
-      'Use only fee-funded executed purchases for capture. Do not count gross token burns again or treat net supply change as cash flow.',
+      'Use only recurring fee-funded burns for capture. Do not add the same burn again through net supply change or treat the mint reduction as separate cash flow.',
     releaseCaveat:
       'CAKE continues minting for farms, products, and ecosystem incentives. Gross burn must be measured alongside emissions even under the 400M maximum supply.',
     sources: [
