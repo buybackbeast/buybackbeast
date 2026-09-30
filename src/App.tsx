@@ -798,7 +798,7 @@ function MethodologyDrawer({ factors, releaseHorizonDays, onClose, onOpenFactors
         </div>
         <div className="drawer-body">
           <p className="method-intro">
-            ValueBeast compares executed recurring value capture with token releases over the same {releaseHorizonDays}-day window. The primary rank is net capture yield relative to circulating market cap.
+            VALUEBEAST compares executed recurring value capture with token releases over the same {releaseHorizonDays}-day window. The primary rank is net capture yield relative to circulating market cap.
           </p>
           <div className="formula-block">annualized effective capture = annualized buybacks × destination factor + annualized recurring burns + annualized holder distributions{`\n`}{releaseHorizonDays}d effective capture = annualized effective capture × {releaseHorizonDays} ÷ 365{`\n`}{releaseHorizonDays}d release pressure = unlocks + inflationary emissions{`\n`}net capture yield = ({releaseHorizonDays}d effective capture − {releaseHorizonDays}d release pressure) ÷ circulating market cap</div>
           <ul className="method-list">
@@ -919,7 +919,7 @@ function ImportDrawer({ onClose, onImport }: ImportDrawerProps) {
     <div className="overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <aside className="drawer" aria-label="Import data">
         <div className="drawer-header">
-          <div><h2>Import dataset</h2><div className="drawer-kicker">CSV or ValueBeast JSON</div></div>
+          <div><h2>Import dataset</h2><div className="drawer-kicker">CSV or VALUEBEAST JSON</div></div>
           <button className="button icon-button button-ghost" type="button" aria-label="Close" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="drawer-body">
@@ -1113,7 +1113,7 @@ function App() {
       <header className="topbar">
         <div className="brand-lockup">
           <div className="brand-mark"><Terminal size={17} strokeWidth={2.2} /></div>
-          <div><div className="brand-name">ValueBeast</div><div className="brand-subtitle">TOKEN VALUE-CAPTURE RANKER</div></div>
+          <div><div className="brand-name">VALUEBEAST</div><div className="brand-subtitle">TOKEN VALUE-CAPTURE RANKER</div></div>
         </div>
         <div className="top-actions">
           <button className="button" type="button" onClick={() => setDrawer('import')}><Upload size={15} /><span>Import</span></button>
