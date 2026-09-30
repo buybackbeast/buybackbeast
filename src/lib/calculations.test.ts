@@ -16,6 +16,10 @@ const base: TokenValueCaptureInput = {
   boughtAndBurnedUsdInPeriod: 80_000_000,
   announcedBuybacksUsd: 25_000_000,
   oneOffBurnsUsd: 100_000_000,
+  unlockUsd7d: 1_000_000,
+  inflationaryEmissionsUsd7d: 500_000,
+  unlockUsd30d: 3_000_000,
+  inflationaryEmissionsUsd30d: 1_000_000,
   unlockUsd90d: 8_000_000,
   inflationaryEmissionsUsd90d: 2_000_000,
   unlockUsd180d: 20_000_000,
@@ -47,10 +51,18 @@ describe('calculateTokenMetrics', () => {
   })
 
   it('uses exact cumulative release inputs for each selected horizon', () => {
+    const sevenDay = calculateTokenMetrics(base, {}, 7)
+    const thirtyDay = calculateTokenMetrics(base, {}, 30)
     const ninetyDay = calculateTokenMetrics(base, {}, 90)
     const oneEightyDay = calculateTokenMetrics(base, {}, 180)
     const defaultHorizon = calculateTokenMetrics(base)
 
+    expect(sevenDay.totalReleasePressureUsd).toBe(1_500_000)
+    expect(sevenDay.horizonEffectiveCaptureUsd).toBeCloseTo(1_821_917.81)
+    expect(sevenDay.netCaptureYieldPct).toBeCloseTo(0.03219178)
+    expect(thirtyDay.totalReleasePressureUsd).toBe(4_000_000)
+    expect(thirtyDay.horizonEffectiveCaptureUsd).toBeCloseTo(7_808_219.18)
+    expect(thirtyDay.netCaptureYieldPct).toBeCloseTo(0.38082192)
     expect(ninetyDay.totalReleasePressureUsd).toBe(10_000_000)
     expect(ninetyDay.horizonEffectiveCaptureUsd).toBeCloseTo(23_424_657.53)
     expect(ninetyDay.netCaptureYieldPct).toBeCloseTo(1.34246575)
@@ -59,6 +71,8 @@ describe('calculateTokenMetrics', () => {
     expect(oneEightyDay.netCaptureYieldPct).toBeCloseTo(2.38493151)
     expect(defaultHorizon.totalReleasePressureUsd).toBe(50_000_000)
     expect(defaultHorizon.netCaptureYieldPct).toBe(4.5)
+    expect(sevenDay.horizonCaptureFactor).toBeCloseTo(7 / 365)
+    expect(thirtyDay.horizonCaptureFactor).toBeCloseTo(30 / 365)
     expect(ninetyDay.annualizedEffectiveCaptureUsd).toBe(95_000_000)
     expect(ninetyDay.horizonCaptureFactor).toBeCloseTo(90 / 365)
     expect(ninetyDay.formulas.totalReleasePressureUsd.expression).toContain(
@@ -111,15 +125,15 @@ describe('calculateTokenMetrics', () => {
 
   it('makes missing data horizon-specific', () => {
     const metrics = calculateTokenMetrics(
-      { ...base, unlockUsd90d: null },
+      { ...base, unlockUsd7d: null },
       {},
-      90,
+      7,
     )
 
     expect(metrics.rankable).toBe(false)
     expect(metrics.netCaptureYieldPct).toBeNull()
-    expect(metrics.unrankedReason).toContain('90-day forward unlock value')
-    expect(calculateTokenMetrics({ ...base, unlockUsd90d: null }).rankable).toBe(
+    expect(metrics.unrankedReason).toContain('7-day forward unlock value')
+    expect(calculateTokenMetrics({ ...base, unlockUsd7d: null }).rankable).toBe(
       true,
     )
   })
@@ -127,6 +141,10 @@ describe('calculateTokenMetrics', () => {
   it('accepts verified zero release pressure as rankable', () => {
     const metrics = calculateTokenMetrics({
       ...base,
+      unlockUsd7d: 0,
+      inflationaryEmissionsUsd7d: 0,
+      unlockUsd30d: 0,
+      inflationaryEmissionsUsd30d: 0,
       unlockUsd90d: 0,
       inflationaryEmissionsUsd90d: 0,
       unlockUsd180d: 0,
