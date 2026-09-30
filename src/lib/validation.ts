@@ -67,6 +67,16 @@ export const TokenValueCaptureInputSchema = z
     boughtAndBurnedUsdInPeriod: nonNegativeFiniteNumber.optional(),
     announcedBuybacksUsd: nonNegativeFiniteNumber,
     oneOffBurnsUsd: nonNegativeFiniteNumber,
+    unlockUsd7d: nonNegativeFiniteNumber.nullable().optional().default(null),
+    inflationaryEmissionsUsd7d: nonNegativeFiniteNumber
+      .nullable()
+      .optional()
+      .default(null),
+    unlockUsd30d: nonNegativeFiniteNumber.nullable().optional().default(null),
+    inflationaryEmissionsUsd30d: nonNegativeFiniteNumber
+      .nullable()
+      .optional()
+      .default(null),
     unlockUsd90d: nonNegativeFiniteNumber.nullable().optional().default(null),
     inflationaryEmissionsUsd90d: nonNegativeFiniteNumber
       .nullable()
@@ -110,17 +120,33 @@ export const TokenValueCaptureInputSchema = z
     const cumulativeSeries = [
       {
         label: 'Unlock value',
-        values: [input.unlockUsd90d, input.unlockUsd180d, input.unlockUsd365d],
-        paths: ['unlockUsd90d', 'unlockUsd180d', 'unlockUsd365d'],
+        values: [
+          input.unlockUsd7d,
+          input.unlockUsd30d,
+          input.unlockUsd90d,
+          input.unlockUsd180d,
+          input.unlockUsd365d,
+        ],
+        paths: [
+          'unlockUsd7d',
+          'unlockUsd30d',
+          'unlockUsd90d',
+          'unlockUsd180d',
+          'unlockUsd365d',
+        ],
       },
       {
         label: 'Inflationary emissions',
         values: [
+          input.inflationaryEmissionsUsd7d,
+          input.inflationaryEmissionsUsd30d,
           input.inflationaryEmissionsUsd90d,
           input.inflationaryEmissionsUsd180d,
           input.inflationaryEmissionsUsd365d,
         ],
         paths: [
+          'inflationaryEmissionsUsd7d',
+          'inflationaryEmissionsUsd30d',
           'inflationaryEmissionsUsd90d',
           'inflationaryEmissionsUsd180d',
           'inflationaryEmissionsUsd365d',
@@ -153,6 +179,8 @@ export const AdjustmentFactorsSchema = z.object({
 })
 
 export const ReleaseHorizonDaysSchema = z.union([
+  z.literal(7),
+  z.literal(30),
   z.literal(90),
   z.literal(180),
   z.literal(365),
