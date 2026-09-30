@@ -1,0 +1,63 @@
+name: Data update
+description: Propose a sourced update to a token's value-capture or unlock data.
+title: "data: update [token]"
+labels: [data]
+body:
+  - type: input
+    id: token
+    attributes:
+      label: Token
+      placeholder: AAVE
+    validations:
+      required: true
+
+  - type: dropdown
+    id: field
+    attributes:
+      label: Field to update
+      options:
+        - Executed buybacks
+        - Direct burns
+        - Holder distributions
+        - Next 12 month unlocks
+        - Market capitalization or FDV
+        - Mechanism or execution status
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: value
+    attributes:
+      label: Proposed value and measurement period
+      placeholder: $12.4m executed from 2025-10-01 through 2026-09-30
+    validations:
+      required: true
+
+  - type: textarea
+    id: sources
+    attributes:
+      label: Sources
+      description: Add official dashboards, governance proposals, or onchain evidence.
+      placeholder: One URL per line, with a short explanation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: double_counting
+    attributes:
+      label: Double-counting check
+      description: Explain whether burned tokens were acquired through the reported buyback.
+      placeholder: The burn is the destination of the same buyback, so it should not also be entered as a direct burn.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I separated executed amounts from announced budgets.
+          required: true
+        - label: I used a consistent USD measurement date for unlock value.
+          required: true

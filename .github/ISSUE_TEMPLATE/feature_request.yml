@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest a measurable improvement to the research workflow.
+title: "feature: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Research problem
+      placeholder: What decision is difficult with the current version?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Example data or sources
+      description: Add a real token example when possible.
