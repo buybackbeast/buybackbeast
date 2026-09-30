@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-09-30T15:28:47Z",
+  "chainId": 1,
+  "rpcEndpoint": "https://ethereum-rpc.publicnode.com",
+  "block": {
+    "number": 26091194,
+    "tag": "0x18e1eba",
+    "hash": "0x1b3d77c29efe1675a7d6fba69351dea581129a660c1bd8c7b8c577257aee7693",
+    "timestamp": "2026-09-30T15:28:47Z"
+  },
+  "contracts": {
+    "uniVesting": "0xCa046A83EDB78F74aE338bb5A291bF6FdAc9e1D2",
+    "uni": "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+    "owner": "0x1a9C8182C09F50C8318d769245beA52c32BE35BC",
+    "recipient": "0xaBA63748c4b4DeF4a3319C3A29fE4829029D926F"
+  },
+  "ethCalls": [
+    {
+      "name": "quarterlyVestingAmount",
+      "signature": "quarterlyVestingAmount()",
+      "to": "0xCa046A83EDB78F74aE338bb5A291bF6FdAc9e1D2",
+      "data": "0x8627a6b5",
+      "blockTag": "0x18e1eba",
+      "result": "0x0000000000000000000000000000000000000000000422ca8b0a00a425000000",
+      "decoded": "5000000 UNI"
+    },
+    {
+      "name": "lastUnlockTimestamp",
+      "signature": "lastUnlockTimestamp()",
+      "to": "0xCa046A83EDB78F74aE338bb5A291bF6FdAc9e1D2",
+      "data": "0x21226f40",
+      "blockTag": "0x18e1eba",
+      "result": "0x000000000000000000000000000000000000000000000000000000006a445880",
+      "decoded": "2026-07-01T00:00:00Z"
+    },
+    {
+      "name": "quartersPassed",
+      "signature": "quartersPassed()",
+      "to": "0xCa046A83EDB78F74aE338bb5A291bF6FdAc9e1D2",
+      "data": "0x049176a6",
+      "blockTag": "0x18e1eba",
+      "result": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "decoded": "0"
+    },
+    {
+      "name": "owner",
+      "signature": "owner()",
+      "to": "0xCa046A83EDB78F74aE338bb5A291bF6FdAc9e1D2",
+      "data": "0x8da5cb5b",
+      "blockTag": "0x18e1eba",
+      "result": "0x0000000000000000000000001a9c8182c09f50c8318d769245bea52c32be35bc",
+      "decoded": "0x1a9C8182C09F50C8318d769245beA52c32BE35BC"
+    },
+    {
+      "name": "recipient",
+      "signature": "recipient()",
+      "to": "0xCa046A83EDB78F74aE338bb5A291bF6FdAc9e1D2",
+      "data": "0x66d003ac",
+      "blockTag": "0x18e1eba",
+      "result": "0x000000000000000000000000aba63748c4b4def4a3319c3a29fe4829029d926f",
+      "decoded": "0xaBA63748c4b4DeF4a3319C3A29fE4829029D926F"
+    },
+    {
+      "name": "UNI",
+      "signature": "UNI()",
+      "to": "0xCa046A83EDB78F74aE338bb5A291bF6FdAc9e1D2",
+      "data": "0x541bcb76",
+      "blockTag": "0x18e1eba",
+      "result": "0x0000000000000000000000001f9840a85d5af5bf1d1762f925bdaddc4201f984",
+      "decoded": "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
+    },
+    {
+      "name": "allowance",
+      "signature": "allowance(address,address)",
+      "to": "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+      "data": "0xdd62ed3e0000000000000000000000001a9c8182c09f50c8318d769245bea52c32be35bc000000000000000000000000ca046a83edb78f74ae338bb5a291bf6fdac9e1d2",
+      "blockTag": "0x18e1eba",
+      "result": "0x00000000000000000000000000000000000000000014adf4b7320334b9000000",
+      "decoded": "25000000 UNI"
+    }
+  ]
+}

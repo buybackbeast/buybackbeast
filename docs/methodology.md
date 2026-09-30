@@ -119,11 +119,17 @@ Evidence labels help readers judge input quality but do not alter the rank:
 
 ## Research candidates
 
-A research candidate is a mechanism-qualified lead, not a ranking observation. Candidate records can carry identity, mechanism classification, status, caveats, and official source links, but they intentionally omit market capitalization, executed USD capture, and forward release values.
+A research candidate is a mechanism-qualified lead, not a ranking observation. The mechanism record remains separate from any dated source snapshot. A snapshot may prefill market capitalization and forward release values, but it cannot enter storage, exports, aggregate metrics, or `rankTokens()` until the user reviews and saves a complete record.
 
-Selecting a candidate only prefills the token editor. The candidate does not enter storage, exports, aggregate metrics, or `rankTokens()` until a user completes the quantitative fields and the normal validation succeeds. Unknown values must never be replaced with placeholder zeroes to manufacture a score.
+Selecting a candidate only prefills the token editor. Unknown values must never be replaced with placeholder zeroes to manufacture a score, and a prefill must retain its measurement date and sources.
 
-For Uniswap specifically, put the USD value of UNI actually burned in executed Firepit or other configured releaser transactions in `recurringDirectBurnsUsdInPeriod`, valued at each burn timestamp. Do not substitute gross protocol fees or TokenJar balances, and do not enter the same activity as an executed buyback. The 100 million UNI retroactive treasury burn is a one-off context item and must not be annualized. Only expected future releases from the revocable growth-budget authorization belong in unlock pressure, not inflation, after valuing the applicable tranches at the snapshot price.
+For Uniswap specifically, DefiLlama reported a $9.07 UNI price, $5.627 billion circulating market capitalization, 1 billion maximum supply, and 100% completion of the original allocation vesting on September 30, 2026. The FDV prefill is therefore a provider-convention proxy of $9.07 billion, not a hard-cap claim.
+
+The separate UNIVesting contract releases UNI on calendar-quarter boundaries. At Ethereum block 26,091,194 on September 30, 2026, its quarterly amount was still 5 million UNI, its last-unlock boundary was July 1, and the treasury owner had 25 million UNI of allowance remaining. Using the half-open interval `(snapshot date, horizon end]`, the snapshot includes 5 million UNI over 90 days, 10 million over 180 days, and 20 million over 365 days. At $9.07, those values are $45.35 million, $90.70 million, and $181.40 million. The allowance can be revoked and the quarterly amount can be changed under the contract rules, so these are scheduled pressure rather than guaranteed sales. Current official UNI documentation reports no active inflation, so the snapshot records verified zero inflationary emissions separately from treasury releases.
+
+The fixed-block JSON-RPC requests and raw responses used for that state check are committed at [`docs/evidence/uniswap-univesting-2026-09-30.json`](evidence/uniswap-univesting-2026-09-30.json), including the owner and `allowance(owner, vesting)` calldata.
+
+Put the USD value of UNI actually burned in executed Firepit or other configured releaser transactions in `recurringDirectBurnsUsdInPeriod`, valued at each burn timestamp. Do not substitute gross protocol fees or TokenJar balances, and do not enter the same activity as an executed buyback. The 100 million UNI retroactive treasury burn is a one-off context item and must not be annualized.
 
 ## Limitations
 
