@@ -419,7 +419,7 @@ h1 {
 
 .candidate-table th.numeric,
 .candidate-table td.numeric {
-  text-align: right;
+  text-align: center;
 }
 
 .candidate-table td {
@@ -490,6 +490,7 @@ h1 {
 
 .candidate-capture-col {
   min-width: 175px;
+  text-align: center !important;
 }
 
 .candidate-table .candidate-details-col {
@@ -513,6 +514,7 @@ h1 {
 .candidate-capture-cell {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
 }
 
