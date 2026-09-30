@@ -2,6 +2,10 @@
 
 An open-source research workspace for ranking crypto tokens by value returned to holders versus forward unlock pressure.
 
+[![verify](https://github.com/seok9202/valuebeast/actions/workflows/verify.yml/badge.svg)](https://github.com/seok9202/valuebeast/actions/workflows/verify.yml)
+
+[Open the live demo](https://seok9202.github.io/valuebeast/) · [Read the methodology](docs/methodology.md) · [Contribute sourced data](https://github.com/seok9202/valuebeast/issues/2)
+
 ValueBeast puts executed buybacks, protocol-funded burns, holder distributions, and forward unlocks on one comparable USD basis. Researchers can inspect matched 90-day, 180-day, or 365-day windows. The default remains 365 days, and every input and adjustment is visible.
 
 ## Why this exists
@@ -22,11 +26,11 @@ All values use USD and a consistent measurement date.
 ```text
 effective buybacks = executed buybacks × destination factor
 
-gross value capture = effective buybacks
-                    + direct economic burns
-                    + holder distributions
+effective value capture = effective buybacks
+                        + direct economic burns
+                        + holder distributions
 
-horizon capture = annualized gross value capture × selected days ÷ 365
+horizon capture = annualized effective value capture × selected days ÷ 365
 
 forward release pressure = selected-window unlock value
                          + selected-window inflationary emissions
@@ -118,6 +122,8 @@ See [the methodology](docs/methodology.md) for edge cases and a worked example.
 ## Contributing
 
 Calculation fixes and well-sourced data updates are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or pull request.
+
+If ValueBeast is useful for your research, star the repository so more crypto researchers can discover it.
 
 ## License
 
