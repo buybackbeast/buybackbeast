@@ -397,7 +397,7 @@ h1 {
 
 .candidate-table {
   width: 100%;
-  min-width: 1260px;
+  min-width: 1040px;
   border-collapse: collapse;
   font-size: 14px;
 }
@@ -481,33 +481,15 @@ h1 {
 }
 
 .candidate-market-col {
-  min-width: 165px;
+  min-width: 150px;
 }
 
-.candidate-market-value,
-.candidate-market-source {
+.candidate-market-value {
   display: block;
 }
 
-.candidate-market-source {
-  margin-top: 4px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
 .candidate-capture-col {
-  min-width: 230px;
-}
-
-.candidate-evidence-col {
-  min-width: 110px;
-}
-
-.candidate-updated-col {
-  color: var(--muted) !important;
-  font-size: 12px;
+  min-width: 175px;
 }
 
 .candidate-table .candidate-details-col {
@@ -622,12 +604,6 @@ h1 {
   font-size: 12px;
   font-weight: 650;
   text-transform: capitalize;
-}
-
-.candidate-program-status.active {
-  border-color: rgba(74, 222, 154, 0.28);
-  color: #83e9b9;
-  background: rgba(74, 222, 154, 0.07);
 }
 
 .candidate-program-status.ended {
@@ -1883,7 +1859,7 @@ tr:hover .sticky-cell {
   }
 
   .candidate-table {
-    min-width: 840px;
+    min-width: 720px;
   }
 
   .candidate-table thead .candidate-rank-col,
@@ -1900,9 +1876,7 @@ tr:hover .sticky-cell {
     min-width: 165px;
   }
 
-  .candidate-market-col,
-  .candidate-evidence-col,
-  .candidate-updated-col {
+  .candidate-market-col {
     display: none;
   }
 
