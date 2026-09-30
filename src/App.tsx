@@ -457,13 +457,13 @@ interface TooltipPosition {
 function getTooltipPosition(rect: DOMRect): TooltipPosition {
   const viewportWidth = document.documentElement.clientWidth
   const margin = 12
-  const width = Math.min(360, viewportWidth - margin * 2)
+  const width = Math.min(400, viewportWidth - margin * 2)
   const triggerCenter = rect.left + rect.width / 2
   const left = Math.min(
     Math.max(margin, triggerCenter - width / 2),
     viewportWidth - width - margin,
   )
-  const placement = rect.top >= 170 ? 'above' : 'below'
+  const placement = rect.top >= 220 ? 'above' : 'below'
 
   return {
     left,

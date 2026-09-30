@@ -727,6 +727,7 @@ h1 {
   color: #d1d9e2;
   font-size: 13px;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .candidate-sources {
@@ -756,6 +757,7 @@ h1 {
   gap: 4px;
   color: #c9d2dc;
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 .candidate-sources a:hover {
