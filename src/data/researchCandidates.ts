@@ -10,6 +10,7 @@ export interface ResearchCandidate {
   symbol: string
   mechanismLabel: string
   mechanismSummary: string
+  mechanismTooltip: string
   buybackDestination: BuybackDestination
   evidenceLevel: EvidenceLevel
   programStatus: ProgramStatus
@@ -35,6 +36,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: 'Protocol fee-funded burn-to-claim',
     mechanismSummary:
       'Protocol fees accrue in TokenJar contracts. A permissionless caller burns a threshold amount of UNI through the configured releaser to withdraw eligible accumulated fee assets.',
+    mechanismTooltip:
+      'Protocol fees collect in TokenJar. Anyone can burn the required UNI to claim the eligible fee assets, permanently removing that UNI from supply.',
     buybackDestination: 'burn',
     evidenceLevel: 'official',
     programStatus: 'active',
@@ -91,6 +94,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: 'Automated fee buyback and burn',
     mechanismSummary:
       'The Assistance Fund automatically converts Hyperliquid trading fees into HYPE as part of L1 execution, then burns the acquired HYPE from circulating and total supply.',
+    mechanismTooltip:
+      'Trading fees are automatically converted into HYPE by the Assistance Fund. The purchased HYPE is permanently burned.',
     buybackDestination: 'burn',
     evidenceLevel: 'onchain',
     programStatus: 'active',
@@ -123,6 +128,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: 'Daily revenue buyback and burn',
     mechanismSummary:
       'Pump.fun uses qualifying platform revenue for daily open-market PUMP purchases and permanently burns the acquired tokens.',
+    mechanismTooltip:
+      'Qualifying platform revenue funds daily open-market PUMP purchases. Every purchased token is permanently burned.',
     buybackDestination: 'burn',
     evidenceLevel: 'onchain',
     programStatus: 'active',
@@ -151,6 +158,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: 'Protocol revenue buyback and burn',
     mechanismSummary:
       'Trading and product fees fund recurring CAKE buybacks and burns. Tokenomics 3.0 redirected the prior v3 revenue-share allocation into burns.',
+    mechanismTooltip:
+      'Trading and product fees fund recurring CAKE purchases and burns. The former v3 revenue share is also directed into burns.',
     buybackDestination: 'burn',
     evidenceLevel: 'official',
     programStatus: 'active',
@@ -183,6 +192,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: 'Revenue basket buyback and burn',
     mechanismSummary:
       'The monthly Community BuyBack lets participants commit INJ for a pro-rata basket of ecosystem revenue. The committed INJ is permanently burned.',
+    mechanismTooltip:
+      'Users commit INJ for a share of a monthly basket of protocol revenue assets. The committed INJ is permanently burned.',
     buybackDestination: 'burn',
     evidenceLevel: 'official',
     programStatus: 'active',
@@ -215,6 +226,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: 'Daily fee-funded TWAP buyback',
     mechanismSummary:
       'Trading-fee revenue funds programmatic LIT purchases through daily 24-hour TWAPs. Official material does not describe the repurchased tokens as burned.',
+    mechanismTooltip:
+      'Trading-fee revenue funds daily 24-hour TWAP purchases of LIT. The repurchased tokens are not confirmed as burned.',
     buybackDestination: 'treasury',
     evidenceLevel: 'official',
     programStatus: 'active',
@@ -247,6 +260,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: '99% fee buyback and staker distribution',
     mechanismSummary:
       'Aster uses 99% of daily fees for TWAP purchases distributed to veASTER stakers and separately burns an equal amount from reserves on a biweekly cycle.',
+    mechanismTooltip:
+      'Aster uses 99% of daily fees to buy ASTER for veASTER stakers, then separately burns an equal amount of reserve tokens every two weeks.',
     buybackDestination: 'recycled',
     evidenceLevel: 'official',
     programStatus: 'active',
@@ -279,6 +294,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: 'Surplus buyback and staker distribution',
     mechanismSummary:
       'The Smart Burn Engine deploys protocol surplus into open-market SKY purchases. August 2026 parameters route 55% of each cycle to buybacks and 45% as USDS to lsSKY stakers.',
+    mechanismTooltip:
+      'Protocol surplus funds open-market SKY purchases. Current parameters route 55% to the buyback flow and 45% as USDS rewards to lsSKY stakers.',
     buybackDestination: 'burn',
     evidenceLevel: 'official',
     programStatus: 'active',
@@ -311,6 +328,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: '80% fee buyback for sPENDLE',
     mechanismSummary:
       'Eighty percent of retained V2 swap and YT fees funds biweekly PENDLE purchases, executed through one-hour TWAPs and distributed to active sPENDLE holders.',
+    mechanismTooltip:
+      'Eighty percent of retained swap and yield-token fees buys PENDLE every two weeks and distributes it to active sPENDLE holders.',
     buybackDestination: 'recycled',
     evidenceLevel: 'onchain',
     programStatus: 'active',
@@ -343,6 +362,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: '40% bot-revenue holder distribution',
     mechanismSummary:
       'Forty percent of bot revenue after referrals is distributed to eligible BANANA holders. EVM claims can be ETH or market-bought BANANA, while Solana claims are SOL.',
+    mechanismTooltip:
+      'Forty percent of bot revenue after referrals goes to eligible BANANA holders, paid in ETH, bought-back BANANA, or SOL depending on the network.',
     buybackDestination: 'recycled',
     evidenceLevel: 'official',
     programStatus: 'active',
@@ -375,6 +396,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: 'Vault-fee buyback and staker distribution',
     mechanismSummary:
       'A share of vault revenue funds holder incentives. BIFI Maxi buys BIFI and compounds it for stakers, while the alternative BIFI Pool can distribute ETH.',
+    mechanismTooltip:
+      'A share of vault revenue rewards holders. One pool buys and compounds BIFI, while the alternative pool can distribute ETH.',
     buybackDestination: 'recycled',
     evidenceLevel: 'official',
     programStatus: 'active',
@@ -407,6 +430,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: '75% net-fee buyback and stake',
     mechanismSummary:
       'The active governance program allocates 75% of net protocol fees to recurring open-market DYDX purchases, then stakes the acquired tokens to validators.',
+    mechanismTooltip:
+      'Seventy-five percent of net protocol fees funds recurring DYDX purchases. The DAO then stakes the acquired tokens to validators.',
     buybackDestination: 'treasury',
     evidenceLevel: 'onchain',
     programStatus: 'active',
@@ -439,6 +464,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: '27% fee buyback to treasury',
     mechanismSummary:
       'Twenty-seven percent of protocol fees funds open-market GMX purchases. Rewards distribution is currently suspended, so acquired GMX accumulates in the treasury.',
+    mechanismTooltip:
+      'Twenty-seven percent of protocol fees buys GMX on the market. With rewards paused, the purchased GMX currently accumulates in the treasury.',
     buybackDestination: 'treasury',
     evidenceLevel: 'onchain',
     programStatus: 'active',
@@ -471,6 +498,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: 'Revenue-funded Litterbox buyback',
     mechanismSummary:
       'Fifty percent of protocol revenue funds daily open-market JUP purchases that accumulate in the Litterbox Trust. Current purchases are not automatically burned.',
+    mechanismTooltip:
+      'Fifty percent of protocol revenue funds daily JUP purchases held in the Litterbox Trust. Current purchases are not automatically burned.',
     buybackDestination: 'treasury',
     evidenceLevel: 'official',
     programStatus: 'active',
@@ -503,6 +532,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: '12% trading-fee buyback',
     mechanismSummary:
       'Supported Raydium pools route 12% of trading fees to recurring RAY purchases. Acquired tokens remain in the disclosed buyback holding wallet rather than being burned.',
+    mechanismTooltip:
+      'Supported pools direct 12% of trading fees to recurring RAY purchases. The tokens remain in a disclosed holding wallet and are not burned.',
     buybackDestination: 'treasury',
     evidenceLevel: 'official',
     programStatus: 'active',
@@ -535,6 +566,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: 'Revenue-funded strategic reserve',
     mechanismSummary:
       'Payment Abstraction converts onchain service fees and offchain enterprise revenue into LINK held by the Chainlink Reserve. It is not a burn or holder distribution.',
+    mechanismTooltip:
+      'Service fees and enterprise revenue are converted into LINK for the Chainlink Reserve. The LINK is neither burned nor distributed to holders.',
     buybackDestination: 'treasury',
     evidenceLevel: 'official',
     programStatus: 'active',
@@ -567,6 +600,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: 'Revenue-scaled monthly buyback',
     mechanismSummary:
       'MIP-021 scales monthly SYRUP purchases to 10%, 20%, or 30% of net revenue depending on the revenue tier. Acquired tokens remain in the Syrup Strategic Fund.',
+    mechanismTooltip:
+      'Monthly SYRUP purchases use 10%, 20%, or 30% of net revenue depending on the revenue tier, then remain in the Strategic Fund.',
     buybackDestination: 'treasury',
     evidenceLevel: 'official',
     programStatus: 'active',
@@ -599,6 +634,8 @@ export const RESEARCH_CANDIDATES = [
     mechanismLabel: 'Revenue buyback against solver emissions',
     mechanismSummary:
       'Weekly revenue-funded TWAP purchases target 120% of weekly COW solver rewards. Bought tokens remain in DAO-controlled safes and can fund later solver payouts.',
+    mechanismTooltip:
+      'Weekly revenue-funded purchases target 120% of solver reward emissions. The COW remains DAO-controlled and may fund future rewards.',
     buybackDestination: 'recycled',
     evidenceLevel: 'onchain',
     programStatus: 'active',

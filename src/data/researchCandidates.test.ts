@@ -66,6 +66,9 @@ describe('research candidate universe', () => {
   it('keeps every candidate source-linked and dated', () => {
     for (const candidate of RESEARCH_CANDIDATES) {
       expect(candidate.verifiedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      expect(candidate.mechanismLabel.trim()).not.toBe('')
+      expect(candidate.mechanismTooltip.trim().length).toBeGreaterThan(60)
+      expect(candidate.mechanismTooltip.length).toBeLessThanOrEqual(200)
       expect(candidate.sources.length).toBeGreaterThan(0)
       for (const source of candidate.sources) {
         expect(source.label.trim()).not.toBe('')
