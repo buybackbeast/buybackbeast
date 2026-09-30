@@ -82,6 +82,10 @@ describe('research candidate universe', () => {
       'circulatingMarketCapUsd',
       'executedBuybacksUsdInPeriod',
       'recurringDirectBurnsUsdInPeriod',
+      'unlockUsd7d',
+      'inflationaryEmissionsUsd7d',
+      'unlockUsd30d',
+      'inflationaryEmissionsUsd30d',
       'unlockUsd365d',
       'inflationaryEmissionsUsd365d',
     ]
