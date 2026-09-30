@@ -93,8 +93,8 @@ interface SortState {
   direction: SortDirection
 }
 
-const STORAGE_KEY = 'valuebeast:v3'
-const LEGACY_STORAGE_KEYS = ['valuebeast:v2', 'valuebeast:v1']
+const STORAGE_KEY = 'buybackbeast:v3'
+const LEGACY_STORAGE_KEYS = ['valuebeast:v3', 'valuebeast:v2', 'valuebeast:v1']
 
 const EMPTY_TOKEN: TokenValueCaptureInput = {
   name: '',
@@ -1174,7 +1174,7 @@ function MethodologyDrawer({ factors, releaseHorizonDays, onClose, onOpenFactors
         </div>
         <div className="drawer-body">
           <p className="method-intro">
-            VALUEBEAST compares executed recurring value capture with token releases over the same {releaseHorizonDays}-day window. The primary rank is net capture yield relative to circulating market cap.
+            BUYBACKBEAST compares executed recurring value capture with token releases over the same {releaseHorizonDays}-day window. The primary rank is net capture yield relative to circulating market cap.
           </p>
           <div className="formula-block">annualized effective capture = annualized buybacks × destination factor + annualized recurring burns + annualized holder distributions{`\n`}{releaseHorizonDays}d effective capture = annualized effective capture × {releaseHorizonDays} ÷ 365{`\n`}{releaseHorizonDays}d release pressure = unlocks + inflationary emissions{`\n`}net capture yield = ({releaseHorizonDays}d effective capture − {releaseHorizonDays}d release pressure) ÷ circulating market cap</div>
           <ul className="method-list">
@@ -1298,7 +1298,7 @@ function ImportDrawer({ onClose, onImport }: ImportDrawerProps) {
     <div className="overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <aside className="drawer" aria-label="Import data">
         <div className="drawer-header">
-          <div><h2>Import dataset</h2><div className="drawer-kicker">CSV or VALUEBEAST JSON</div></div>
+          <div><h2>Import dataset</h2><div className="drawer-kicker">CSV or BUYBACKBEAST JSON</div></div>
           <button className="button icon-button button-ghost" type="button" aria-label="Close" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="drawer-body">
@@ -1308,7 +1308,7 @@ function ImportDrawer({ onClose, onImport }: ImportDrawerProps) {
           </label>
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="formula-block" style={{ marginTop: 18 }}>CSV uses one token per row. Keep blank unlock or emission cells when the value is unknown; enter 0 only for a verified zero. Separate multiple source URLs with |.</div>
-          <a className="button" href={`${import.meta.env.BASE_URL}valuebeast-template.csv`} download>
+          <a className="button" href={`${import.meta.env.BASE_URL}buybackbeast-template.csv`} download>
             <FileSpreadsheet size={15} /> Download CSV template
           </a>
         </div>
@@ -1450,7 +1450,7 @@ function App() {
       factors,
       releaseHorizonDays,
     }
-    downloadFile('valuebeast-dataset.json', JSON.stringify(state, null, 2), 'application/json')
+    downloadFile('buybackbeast-dataset.json', JSON.stringify(state, null, 2), 'application/json')
     setExportOpen(false)
     setToast('JSON exported')
   }
@@ -1458,7 +1458,7 @@ function App() {
   const exportCsv = () => {
     const header = CSV_FIELDS.join(',')
     const rows = tokens.map((token) => CSV_FIELDS.map((field) => csvEscape(token[field])).join(','))
-    downloadFile('valuebeast-tokens.csv', [header, ...rows].join('\n'), 'text/csv;charset=utf-8')
+    downloadFile('buybackbeast-tokens.csv', [header, ...rows].join('\n'), 'text/csv;charset=utf-8')
     setExportOpen(false)
     setToast('CSV exported')
   }
@@ -1499,7 +1499,7 @@ function App() {
       <header className="topbar">
         <div className="brand-lockup">
           <div className="brand-mark"><Terminal size={17} strokeWidth={2.2} /></div>
-          <div><div className="brand-name">VALUEBEAST</div><div className="brand-subtitle">TOKEN VALUE-CAPTURE RANKER</div></div>
+          <div><div className="brand-name">BUYBACKBEAST</div><div className="brand-subtitle">TOKEN VALUE-CAPTURE RANKER</div></div>
         </div>
         <div className="top-actions">
           <button className="button" type="button" onClick={() => setDrawer('import')}><Upload size={15} /><span>Import</span></button>

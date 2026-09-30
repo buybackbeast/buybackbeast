@@ -1,6 +1,6 @@
 # Methodology
 
-VALUEBEAST compares backward-looking value capture with forward-looking dilution. It is a research framework, so the inputs, adjustments, and limitations remain visible.
+BUYBACKBEAST compares backward-looking value capture with forward-looking dilution. It is a research framework, so the inputs, adjustments, and limitations remain visible.
 
 ## Measurement windows
 
@@ -10,7 +10,7 @@ VALUEBEAST compares backward-looking value capture with forward-looking dilution
 - Annualized effective capture is scaled to the selected release window before net yield and coverage are calculated.
 - Market capitalization, FDV, and unlock value should use the same token price and timestamp.
 
-Mixing periods can distort the result. VALUEBEAST therefore compares a 90-day capture run rate with 90-day releases, a 180-day run rate with 180-day releases, and a 365-day run rate with 365-day releases. A shorter capture observation period can be annualized, but it remains labeled provisional. One-off burns and capital returns are never annualized.
+Mixing periods can distort the result. BUYBACKBEAST therefore compares a 90-day capture run rate with 90-day releases, a 180-day run rate with 180-day releases, and a 365-day run rate with 365-day releases. A shorter capture observation period can be annualized, but it remains labeled provisional. One-off burns and capital returns are never annualized.
 
 ## Value-capture inputs
 
@@ -53,9 +53,9 @@ emission value = newly issued token amount × measurement-date token price
 release pressure = unlock value + emission value
 ```
 
-Each horizon is cumulative from the data date. Known values should satisfy `90d ≤ 180d ≤ 365d` separately for unlocks and emissions. VALUEBEAST never prorates a 365-day total to estimate a shorter horizon because unlock schedules are often uneven.
+Each horizon is cumulative from the data date. Known values should satisfy `90d ≤ 180d ≤ 365d` separately for unlocks and emissions. BUYBACKBEAST never prorates a 365-day total to estimate a shorter horizon because unlock schedules are often uneven.
 
-Release pressure measures potential dilution, not guaranteed selling. VALUEBEAST subtracts it to provide a conservative comparison with value capture over the same period. If either forward component is unknown for the selected horizon, the token is marked `NR` instead of treating missing data as zero. Missing data at another horizon does not prevent ranking the selected one.
+Release pressure measures potential dilution, not guaranteed selling. BUYBACKBEAST subtracts it to provide a conservative comparison with value capture over the same period. If either forward component is unknown for the selected horizon, the token is marked `NR` instead of treating missing data as zero. Missing data at another horizon does not prevent ranking the selected one.
 
 ## Ranking formulas
 
