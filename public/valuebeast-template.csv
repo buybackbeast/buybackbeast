@@ -1,0 +1,2 @@
+id,name,symbol,circulatingMarketCapUsd,fdvUsd,capturePeriodDays,executedBuybacksUsdInPeriod,recurringDirectBurnsUsdInPeriod,holderDistributionsUsdInPeriod,boughtAndBurnedUsdInPeriod,announcedBuybacksUsd,oneOffBurnsUsd,unlockUsd365d,inflationaryEmissionsUsd365d,buybackDestination,evidenceLevel,programStatus,dataDate,sourceUrls
+example-token,Example Protocol,EXM,1000000000,1600000000,365,80000000,5000000,10000000,80000000,0,0,45000000,5000000,burn,onchain,active,2026-09-30,https://example.com/replace-with-a-real-source
