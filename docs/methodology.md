@@ -117,6 +117,14 @@ Evidence labels help readers judge input quality but do not alter the rank:
 - **Estimate:** A disclosed calculation or annualization
 - **Announcement:** A future intention, excluded from executed value capture
 
+## Research candidates
+
+A research candidate is a mechanism-qualified lead, not a ranking observation. Candidate records can carry identity, mechanism classification, status, caveats, and official source links, but they intentionally omit market capitalization, executed USD capture, and forward release values.
+
+Selecting a candidate only prefills the token editor. The candidate does not enter storage, exports, aggregate metrics, or `rankTokens()` until a user completes the quantitative fields and the normal validation succeeds. Unknown values must never be replaced with placeholder zeroes to manufacture a score.
+
+For Uniswap specifically, put the USD value of UNI actually burned in executed Firepit or other configured releaser transactions in `recurringDirectBurnsUsdInPeriod`, valued at each burn timestamp. Do not substitute gross protocol fees or TokenJar balances, and do not enter the same activity as an executed buyback. The 100 million UNI retroactive treasury burn is a one-off context item and must not be annualized. Only expected future releases from the revocable growth-budget authorization belong in unlock pressure, not inflation, after valuing the applicable tranches at the snapshot price.
+
 ## Limitations
 
 - An unlock does not imply an immediate sale.

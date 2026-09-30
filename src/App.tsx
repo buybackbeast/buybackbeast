@@ -8,6 +8,7 @@ import {
   CircleHelp,
   Download,
   Edit3,
+  ExternalLink,
   FileJson,
   FileSpreadsheet,
   Gauge,
@@ -26,6 +27,11 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import {
+  RESEARCH_CANDIDATES,
+  createCandidateEditorSeed,
+  type ResearchCandidate,
+} from './data/researchCandidates'
 import {
   BUYBACK_DESTINATIONS,
   DEFAULT_ADJUSTMENT_FACTORS,
@@ -565,19 +571,130 @@ function SortButton({ label, sortKey, sort, onSort }: SortButtonProps) {
   )
 }
 
+interface ResearchCandidatesProps {
+  candidates: readonly ResearchCandidate[]
+  ranked: RankedToken[]
+  onPrefill: (candidate: ResearchCandidate) => void
+  onEdit: (token: TokenValueCaptureInput) => void
+}
+
+function ResearchCandidates({ candidates, ranked, onPrefill, onEdit }: ResearchCandidatesProps) {
+  return (
+    <section className="research-candidates" aria-labelledby="research-candidates-title">
+      <div className="research-candidates-header">
+        <div>
+          <div className="research-kicker">Mechanism-qualified · snapshot pending</div>
+          <h2 id="research-candidates-title">Research candidates</h2>
+        </div>
+        <p>Official-source mechanisms awaiting complete same-window inputs. Candidates never affect rankings until you review and save them.</p>
+      </div>
+
+      <ul className="research-candidate-list">
+        {candidates.map((candidate) => {
+          const existing = ranked.find((row) => row.input.symbol.toUpperCase() === candidate.symbol)
+          const datasetStatus = existing
+            ? existing.rank === null ? 'In dataset · NR' : `Ranked #${existing.rank}`
+            : 'Not ranked'
+
+          return (
+            <li className="research-candidate-card" key={candidate.id}>
+              <div className="research-candidate-main">
+                <div className="research-candidate-identity">
+                  <div className="token-monogram">{monogram(candidate.symbol)}</div>
+                  <div>
+                    <div className="token-name">{candidate.name}</div>
+                    <div className="token-symbol">{candidate.symbol}</div>
+                  </div>
+                </div>
+                <div className="research-candidate-meta">
+                  <span className="evidence-pill documented">Official · checked {candidate.verifiedOn}</span>
+                  <span className="mechanism-pill">{candidate.mechanismLabel}</span>
+                  <span className={cx('candidate-program-status', candidate.programStatus)}>{STATUS_LABELS[candidate.programStatus]}</span>
+                  <span className="candidate-status">{datasetStatus}</span>
+                </div>
+              </div>
+
+              <p className="research-candidate-copy">{candidate.mechanismSummary}</p>
+
+              <dl className="candidate-evidence-grid">
+                <div><dt>Recurring evidence</dt><dd>{candidate.recurringEvidence}</dd></div>
+                <div><dt>Excluded context</dt><dd>{candidate.excludedOneOff}</dd></div>
+                <div><dt>Release caveat</dt><dd>{candidate.releaseCaveat}</dd></div>
+              </dl>
+
+              <div className="research-candidate-actions">
+                <details className="candidate-sources">
+                  <summary>{candidate.sources.length} official sources</summary>
+                  <div>
+                    {candidate.sources.map((source) => (
+                      <a href={source.url} key={source.url} target="_blank" rel="noreferrer" aria-label={`${source.label}, opens in a new tab`}>
+                        {source.label}<ExternalLink size={12} />
+                      </a>
+                    ))}
+                  </div>
+                </details>
+                <button
+                  className="button button-primary"
+                  type="button"
+                  aria-label={existing ? `Edit ${candidate.symbol} in dataset` : `Prefill Add token form with ${candidate.name} research metadata`}
+                  onClick={() => existing ? onEdit(existing.input) : onPrefill(candidate)}
+                >
+                  {existing ? `Edit ${candidate.symbol}` : `Prefill ${candidate.symbol}`}
+                </button>
+              </div>
+
+              {!existing && (
+                <p className="candidate-disclaimer">Mechanism verified, score not calculated. Market cap, executed capture, and 90/180/365-day release inputs remain for review.</p>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
 interface TokenDrawerProps {
   token: TokenValueCaptureInput
   editingId: string | undefined
+  candidate: ResearchCandidate | null
   factors: AdjustmentFactors
   releaseHorizonDays: ReleaseHorizonDays
   onClose: () => void
   onSave: (token: TokenValueCaptureInput) => void
 }
 
-function TokenDrawer({ token, editingId, factors, releaseHorizonDays, onClose, onSave }: TokenDrawerProps) {
+function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays, onClose, onSave }: TokenDrawerProps) {
+  const drawerRef = useRef<HTMLFormElement>(null)
   const [draft, setDraft] = useState<TokenValueCaptureInput>(() => ({ ...token, sourceUrls: [...token.sourceUrls] }))
   const [error, setError] = useState('')
   const [sources, setSources] = useState(token.sourceUrls.join('\n'))
+
+  useEffect(() => {
+    const drawerElement = drawerRef.current
+    if (!drawerElement) return
+
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return
+      const focusable = Array.from(drawerElement.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+      )).filter((element) => element.offsetParent !== null)
+      const first = focusable[0]
+      const last = focusable.at(-1)
+      if (!first || !last) return
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    drawerElement.addEventListener('keydown', trapFocus)
+    return () => drawerElement.removeEventListener('keydown', trapFocus)
+  }, [])
 
   const preview = useMemo<TokenMetrics | null>(() => {
     try {
@@ -617,7 +734,7 @@ function TokenDrawer({ token, editingId, factors, releaseHorizonDays, onClose, o
 
   return (
     <div className="overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <form className="drawer drawer-wide" aria-label={editingId ? 'Edit token' : 'Add token'} onSubmit={submit}>
+      <form ref={drawerRef} className="drawer drawer-wide" role="dialog" aria-modal="true" aria-label={editingId ? 'Edit token' : 'Add token'} onSubmit={submit}>
         <div className="drawer-header">
           <div>
             <h2>{editingId ? 'Edit token' : 'Add token'}</h2>
@@ -629,12 +746,26 @@ function TokenDrawer({ token, editingId, factors, releaseHorizonDays, onClose, o
         </div>
 
         <div className="drawer-body">
+          {candidate && (
+            <div className="candidate-prefill-note">
+              <Info size={16} />
+              <div>
+                <strong>{candidate.symbol} research draft</strong>
+                <span>Identity, mechanism classification, and status were prefilled. Snapshot evidence defaults to Estimate until your numeric sources justify a stronger label. {candidate.editorGuidance} Complete every numeric field, set a data date, and add sources for the quantitative snapshot before saving. Blank releases mean unknown, not zero.</span>
+                <div className="candidate-prefill-sources">
+                  {candidate.sources.map((source) => (
+                    <a href={source.url} key={source.url} target="_blank" rel="noreferrer" aria-label={`${source.label}, opens in a new tab`}>{source.label}<ExternalLink size={11} /></a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
           <section className="drawer-section">
             <div className="section-title">Identity <span>Required</span></div>
             <div className="form-grid">
               <div className="field">
                 <label htmlFor="token-name">Project name</label>
-                <input id="token-name" className="input" required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Example Protocol" />
+                <input id="token-name" className="input" autoFocus={!candidate} required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Example Protocol" />
               </div>
               <div className="field">
                 <label htmlFor="token-symbol">Token symbol</label>
@@ -642,7 +773,7 @@ function TokenDrawer({ token, editingId, factors, releaseHorizonDays, onClose, o
               </div>
               <div className="field">
                 <label htmlFor="market-cap">Circulating market cap</label>
-                <input id="market-cap" className="input" type="number" min="1" required value={draft.circulatingMarketCapUsd || ''} onChange={(event) => setNumber('circulatingMarketCapUsd', event.target.value)} placeholder="500000000" />
+                <input id="market-cap" className="input" autoFocus={Boolean(candidate)} type="number" min="1" required value={draft.circulatingMarketCapUsd || ''} onChange={(event) => setNumber('circulatingMarketCapUsd', event.target.value)} placeholder="500000000" />
               </div>
               <div className="field">
                 <label htmlFor="fdv">Fully diluted value</label>
@@ -656,7 +787,7 @@ function TokenDrawer({ token, editingId, factors, releaseHorizonDays, onClose, o
             <div className="form-grid">
               <div className="field">
                 <label htmlFor="period-days">Observed period, days</label>
-                <input id="period-days" className="input" type="number" min="90" max="365" required value={draft.capturePeriodDays} onChange={(event) => setNumber('capturePeriodDays', event.target.value)} />
+                <input id="period-days" className="input" type="number" min="90" max="365" required value={draft.capturePeriodDays || ''} onChange={(event) => setNumber('capturePeriodDays', event.target.value)} />
                 <p className="field-hint">Periods below 365 days are marked Provisional.</p>
               </div>
               <div className="field">
@@ -947,6 +1078,8 @@ function App() {
     useState<ReleaseHorizonDays>(initial.releaseHorizonDays)
   const [drawer, setDrawer] = useState<Drawer>(null)
   const [editingToken, setEditingToken] = useState<TokenValueCaptureInput | null>(null)
+  const [draftCandidate, setDraftCandidate] = useState<ResearchCandidate | null>(null)
+  const tokenTriggerRef = useRef<HTMLElement | null>(null)
   const [search, setSearch] = useState('')
   const [mechanismFilter, setMechanismFilter] = useState<'all' | BuybackDestination>('all')
   const [evidenceFilter, setEvidenceFilter] = useState<'all' | EvidenceLevel>('all')
@@ -975,13 +1108,18 @@ function App() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        const closingTokenDrawer = drawer === 'token'
         setDrawer(null)
+        setDraftCandidate(null)
         setExportOpen(false)
+        if (closingTokenDrawer) {
+          window.requestAnimationFrame(() => tokenTriggerRef.current?.focus())
+        }
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [drawer])
 
   const ranked = useMemo(
     () => rankTokens(tokens, { destination: factors.destination }, releaseHorizonDays),
@@ -1020,13 +1158,47 @@ function App() {
       : { key, direction: key === 'token' || key === 'rank' ? 'asc' : 'desc' })
   }
 
+  const rememberTokenTrigger = () => {
+    tokenTriggerRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null
+  }
+
+  const restoreTokenTrigger = () => {
+    window.requestAnimationFrame(() => tokenTriggerRef.current?.focus())
+  }
+
+  const closeTokenDrawer = () => {
+    setDrawer(null)
+    setDraftCandidate(null)
+    restoreTokenTrigger()
+  }
+
   const openAdd = () => {
+    rememberTokenTrigger()
     setEditingToken(null)
+    setDraftCandidate(null)
     setDrawer('token')
   }
 
   const openEdit = (token: TokenValueCaptureInput) => {
+    rememberTokenTrigger()
     setEditingToken(token)
+    setDraftCandidate(null)
+    setDrawer('token')
+  }
+
+  const openCandidate = (candidate: ResearchCandidate) => {
+    rememberTokenTrigger()
+    const seed = createCandidateEditorSeed(candidate)
+    setEditingToken({
+      ...EMPTY_TOKEN,
+      ...seed,
+      id: undefined,
+      capturePeriodDays: 0,
+      dataDate: '',
+    })
+    setDraftCandidate(candidate)
     setDrawer('token')
   }
 
@@ -1036,7 +1208,9 @@ function App() {
       : [...current, token])
     setDatasetType('custom')
     setDrawer(null)
-    setToast(editingToken ? `${token.symbol} updated` : `${token.symbol} added`)
+    setDraftCandidate(null)
+    restoreTokenTrigger()
+    setToast(editingToken?.id ? `${token.symbol} updated` : `${token.symbol} added`)
   }
 
   const deleteToken = (token: TokenValueCaptureInput) => {
@@ -1148,6 +1322,13 @@ function App() {
           <button type="button" aria-label="Dismiss sample data message" onClick={() => setBannerVisible(false)}><X size={15} /></button>
         </div>
       )}
+
+      <ResearchCandidates
+        candidates={RESEARCH_CANDIDATES}
+        ranked={ranked}
+        onPrefill={openCandidate}
+        onEdit={openEdit}
+      />
 
       <section className="metrics-grid" aria-label="Dataset metrics">
         <article className="metric-card">
@@ -1305,7 +1486,7 @@ function App() {
       <button className="button button-primary mobile-add" type="button" onClick={openAdd}><Plus size={16} /> Add token</button>
 
       {drawer === 'token' && (
-        <TokenDrawer token={editingToken ?? EMPTY_TOKEN} editingId={editingToken?.id} factors={factors} releaseHorizonDays={releaseHorizonDays} onClose={() => setDrawer(null)} onSave={saveToken} />
+        <TokenDrawer token={editingToken ?? EMPTY_TOKEN} editingId={editingToken?.id} candidate={draftCandidate} factors={factors} releaseHorizonDays={releaseHorizonDays} onClose={closeTokenDrawer} onSave={saveToken} />
       )}
       {drawer === 'methodology' && (
         <MethodologyDrawer factors={factors} releaseHorizonDays={releaseHorizonDays} onClose={() => setDrawer(null)} onOpenFactors={() => setDrawer('factors')} />
