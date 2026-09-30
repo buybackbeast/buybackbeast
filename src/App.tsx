@@ -29,8 +29,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   RESEARCH_CANDIDATES,
-  createCandidateEditorSeed,
-  getCandidateCaptureValidationError,
   type ResearchCandidate,
 } from './data/researchCandidates'
 import { getSourcedCandidateSnapshot } from './data/sourcedSnapshots'
@@ -56,7 +54,6 @@ import {
 } from './lib'
 
 type Drawer = 'token' | 'methodology' | 'factors' | 'import' | null
-type DatasetType = 'illustrative' | 'custom'
 type SortKey =
   | 'rank'
   | 'token'
@@ -68,8 +65,7 @@ type SortKey =
 type SortDirection = 'asc' | 'desc'
 
 interface StoredState {
-  version: 2
-  datasetType: DatasetType
+  version: 3
   tokens: TokenValueCaptureInput[]
   factors: AdjustmentFactors
   releaseHorizonDays: ReleaseHorizonDays
@@ -88,161 +84,8 @@ interface SortState {
   direction: SortDirection
 }
 
-const STORAGE_KEY = 'valuebeast:v2'
-const LEGACY_STORAGE_KEY = 'valuebeast:v1'
-
-const SAMPLE_TOKENS: TokenValueCaptureInput[] = [
-  {
-    id: 'sample-atlas',
-    name: 'Atlas Protocol',
-    symbol: 'ATL',
-    circulatingMarketCapUsd: 840_000_000,
-    fdvUsd: 1_050_000_000,
-    capturePeriodDays: 365,
-    executedBuybacksUsdInPeriod: 54_000_000,
-    recurringDirectBurnsUsdInPeriod: 8_000_000,
-    holderDistributionsUsdInPeriod: 12_500_000,
-    boughtAndBurnedUsdInPeriod: 38_000_000,
-    announcedBuybacksUsd: 18_000_000,
-    oneOffBurnsUsd: 0,
-    unlockUsd90d: 1_500_000,
-    inflationaryEmissionsUsd90d: 1_500_000,
-    unlockUsd180d: 4_000_000,
-    inflationaryEmissionsUsd180d: 3_000_000,
-    unlockUsd365d: 9_000_000,
-    inflationaryEmissionsUsd365d: 6_000_000,
-    buybackDestination: 'burn',
-    evidenceLevel: 'onchain',
-    programStatus: 'active',
-    dataDate: '2026-09-30',
-    sourceUrls: ['https://example.com/atlas-evidence'],
-  },
-  {
-    id: 'sample-nova',
-    name: 'Nova Exchange',
-    symbol: 'NOVA',
-    circulatingMarketCapUsd: 1_550_000_000,
-    fdvUsd: 2_800_000_000,
-    capturePeriodDays: 365,
-    executedBuybacksUsdInPeriod: 92_000_000,
-    recurringDirectBurnsUsdInPeriod: 0,
-    holderDistributionsUsdInPeriod: 24_000_000,
-    boughtAndBurnedUsdInPeriod: 0,
-    announcedBuybacksUsd: 40_000_000,
-    oneOffBurnsUsd: 0,
-    unlockUsd90d: 8_000_000,
-    inflationaryEmissionsUsd90d: 4_000_000,
-    unlockUsd180d: 18_000_000,
-    inflationaryEmissionsUsd180d: 9_000_000,
-    unlockUsd365d: 36_000_000,
-    inflationaryEmissionsUsd365d: 18_000_000,
-    buybackDestination: 'lock',
-    evidenceLevel: 'official',
-    programStatus: 'active',
-    dataDate: '2026-09-30',
-    sourceUrls: ['https://example.com/nova-report'],
-  },
-  {
-    id: 'sample-ember',
-    name: 'Ember Network',
-    symbol: 'EMB',
-    circulatingMarketCapUsd: 410_000_000,
-    fdvUsd: 1_480_000_000,
-    capturePeriodDays: 180,
-    executedBuybacksUsdInPeriod: 14_000_000,
-    recurringDirectBurnsUsdInPeriod: 2_200_000,
-    holderDistributionsUsdInPeriod: 0,
-    boughtAndBurnedUsdInPeriod: 11_000_000,
-    announcedBuybacksUsd: 30_000_000,
-    oneOffBurnsUsd: 45_000_000,
-    unlockUsd90d: 30_000_000,
-    inflationaryEmissionsUsd90d: 6_000_000,
-    unlockUsd180d: 55_000_000,
-    inflationaryEmissionsUsd180d: 12_000_000,
-    unlockUsd365d: 92_000_000,
-    inflationaryEmissionsUsd365d: 24_000_000,
-    buybackDestination: 'burn',
-    evidenceLevel: 'third_party',
-    programStatus: 'active',
-    dataDate: '2026-09-30',
-    sourceUrls: ['https://example.com/ember-research'],
-  },
-  {
-    id: 'sample-cascade',
-    name: 'Cascade Finance',
-    symbol: 'CSD',
-    circulatingMarketCapUsd: 2_100_000_000,
-    fdvUsd: 2_340_000_000,
-    capturePeriodDays: 365,
-    executedBuybacksUsdInPeriod: 126_000_000,
-    recurringDirectBurnsUsdInPeriod: 0,
-    holderDistributionsUsdInPeriod: 48_000_000,
-    boughtAndBurnedUsdInPeriod: 0,
-    announcedBuybacksUsd: 0,
-    oneOffBurnsUsd: 0,
-    unlockUsd90d: 3_000_000,
-    inflationaryEmissionsUsd90d: 800_000,
-    unlockUsd180d: 7_000_000,
-    inflationaryEmissionsUsd180d: 1_700_000,
-    unlockUsd365d: 14_000_000,
-    inflationaryEmissionsUsd365d: 3_500_000,
-    buybackDestination: 'treasury',
-    evidenceLevel: 'onchain',
-    programStatus: 'active',
-    dataDate: '2026-09-30',
-    sourceUrls: ['https://example.com/cascade-dashboard'],
-  },
-  {
-    id: 'sample-orbit',
-    name: 'Orbit Markets',
-    symbol: 'ORB',
-    circulatingMarketCapUsd: 690_000_000,
-    fdvUsd: 1_900_000_000,
-    capturePeriodDays: 90,
-    executedBuybacksUsdInPeriod: 9_800_000,
-    recurringDirectBurnsUsdInPeriod: 0,
-    holderDistributionsUsdInPeriod: 4_500_000,
-    boughtAndBurnedUsdInPeriod: 0,
-    announcedBuybacksUsd: 25_000_000,
-    oneOffBurnsUsd: 0,
-    unlockUsd90d: 20_000_000,
-    inflationaryEmissionsUsd90d: 5_000_000,
-    unlockUsd180d: 35_000_000,
-    inflationaryEmissionsUsd180d: 10_000_000,
-    unlockUsd365d: 58_000_000,
-    inflationaryEmissionsUsd365d: 21_000_000,
-    buybackDestination: 'recycled',
-    evidenceLevel: 'estimate',
-    programStatus: 'paused',
-    dataDate: '2026-09-30',
-    sourceUrls: ['https://example.com/orbit-estimate'],
-  },
-  {
-    id: 'sample-prism',
-    name: 'Prism Labs',
-    symbol: 'PRSM',
-    circulatingMarketCapUsd: 275_000_000,
-    fdvUsd: 860_000_000,
-    capturePeriodDays: 365,
-    executedBuybacksUsdInPeriod: 7_500_000,
-    recurringDirectBurnsUsdInPeriod: 1_400_000,
-    holderDistributionsUsdInPeriod: 0,
-    boughtAndBurnedUsdInPeriod: 5_800_000,
-    announcedBuybacksUsd: 12_000_000,
-    oneOffBurnsUsd: 0,
-    unlockUsd90d: null,
-    inflationaryEmissionsUsd90d: null,
-    unlockUsd180d: null,
-    inflationaryEmissionsUsd180d: null,
-    unlockUsd365d: null,
-    inflationaryEmissionsUsd365d: null,
-    buybackDestination: 'burn',
-    evidenceLevel: 'announcement',
-    programStatus: 'proposed',
-    dataDate: '2026-09-30',
-    sourceUrls: ['https://example.com/prism-announcement'],
-  },
-]
+const STORAGE_KEY = 'valuebeast:v3'
+const LEGACY_STORAGE_KEYS = ['valuebeast:v2', 'valuebeast:v1']
 
 const EMPTY_TOKEN: TokenValueCaptureInput = {
   name: '',
@@ -343,10 +186,6 @@ const NULLABLE_NUMERIC_FIELDS = new Set<keyof TokenValueCaptureInput>([
   'unlockUsd365d',
   'inflationaryEmissionsUsd365d',
 ])
-
-function cloneSample(): TokenValueCaptureInput[] {
-  return SAMPLE_TOKENS.map((token) => ({ ...token, sourceUrls: [...token.sourceUrls] }))
-}
 
 function formatUsd(value: number | null | undefined, compact = true): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return 'Unknown'
@@ -482,8 +321,7 @@ function normalizeStoredState(input: StoredStateInput): StoredState {
   }
 
   return {
-    version: 2,
-    datasetType: input.datasetType === 'custom' ? 'custom' : 'illustrative',
+    version: 3,
     tokens: parseTokenInputs(input.tokens),
     factors: parseAdjustmentFactors(input.factors),
     releaseHorizonDays,
@@ -494,19 +332,32 @@ function readInitialState(): StoredState {
   try {
     const hash = new URLSearchParams(window.location.hash.slice(1)).get('data')
     if (hash) {
-      return normalizeStoredState(decodeShareState(hash))
+      const shared = decodeShareState(hash)
+      const normalized = normalizeStoredState(shared)
+      return shared.datasetType === 'illustrative'
+        ? { ...normalized, tokens: [] }
+        : normalized
     }
-    const stored = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY)
+    const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
       return normalizeStoredState(JSON.parse(stored) as StoredStateInput)
     }
+
+    for (const legacyKey of LEGACY_STORAGE_KEYS) {
+      const legacyStored = localStorage.getItem(legacyKey)
+      if (!legacyStored) continue
+      const parsed = JSON.parse(legacyStored) as StoredStateInput
+      const migrated = normalizeStoredState(parsed)
+      return parsed.datasetType === 'illustrative'
+        ? { ...migrated, tokens: [] }
+        : migrated
+    }
   } catch {
-    // Corrupt state falls back to the bundled illustrative dataset.
+    // Corrupt state falls back to a clean research workspace.
   }
   return {
-    version: 2,
-    datasetType: 'illustrative',
-    tokens: cloneSample(),
+    version: 3,
+    tokens: [],
     factors: DEFAULT_ADJUSTMENT_FACTORS,
     releaseHorizonDays: 365,
   }
@@ -575,89 +426,184 @@ function SortButton({ label, sortKey, sort, onSort }: SortButtonProps) {
 
 interface ResearchCandidatesProps {
   candidates: readonly ResearchCandidate[]
-  ranked: RankedToken[]
-  onPrefill: (candidate: ResearchCandidate) => void
-  onEdit: (token: TokenValueCaptureInput) => void
+  releaseHorizonDays: ReleaseHorizonDays
+  onReleaseHorizonChange: (days: ReleaseHorizonDays) => void
 }
 
-function ResearchCandidates({ candidates, ranked, onPrefill, onEdit }: ResearchCandidatesProps) {
+function getCandidateSnapshotPressure(candidateId: string, horizon: ReleaseHorizonDays): number | null {
+  const snapshot = getSourcedCandidateSnapshot(candidateId)
+  if (!snapshot) return null
+  const data = snapshot.marketReleaseData
+  const values = horizon === 90
+    ? [data.unlockUsd90d, data.inflationaryEmissionsUsd90d]
+    : horizon === 180
+      ? [data.unlockUsd180d, data.inflationaryEmissionsUsd180d]
+      : [data.unlockUsd365d, data.inflationaryEmissionsUsd365d]
+  return values.some((value) => value === null) ? null : values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
+}
+
+function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonChange }: ResearchCandidatesProps) {
+  const [query, setQuery] = useState('')
+  const [destination, setDestination] = useState<'all' | BuybackDestination>('all')
+  const [evidence, setEvidence] = useState<'all' | EvidenceLevel>('all')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const visibleCandidates = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase()
+    return candidates.filter((candidate) => {
+      const matchesQuery = !normalizedQuery
+        || candidate.name.toLowerCase().includes(normalizedQuery)
+        || candidate.symbol.toLowerCase().includes(normalizedQuery)
+        || candidate.mechanismLabel.toLowerCase().includes(normalizedQuery)
+      const matchesDestination = destination === 'all' || candidate.buybackDestination === destination
+      const matchesEvidence = evidence === 'all' || candidate.evidenceLevel === evidence
+      return matchesQuery && matchesDestination && matchesEvidence
+    })
+  }, [candidates, destination, evidence, query])
+
   return (
     <section className="research-candidates" aria-labelledby="research-candidates-title">
       <div className="research-candidates-header">
         <div>
-          <div className="research-kicker">Mechanism-qualified · source-linked</div>
-          <h2 id="research-candidates-title">Research candidates</h2>
+          <div className="research-kicker">Source-linked · mechanism-qualified</div>
+          <h2 id="research-candidates-title">Value-capture market</h2>
         </div>
-        <p>{candidates.length} source-linked mechanisms are tracked. Candidates never affect rankings until every numeric input is reviewed and saved.</p>
+        <p>{candidates.length} assets tracked. Missing values stay pending until dated capture and release data are complete.</p>
       </div>
 
-      <ul className="research-candidate-list">
-        {candidates.map((candidate) => {
-          const existing = ranked.find((row) => row.input.symbol.toUpperCase() === candidate.symbol)
-          const snapshot = getSourcedCandidateSnapshot(candidate.id)
-          const datasetStatus = existing
-            ? existing.rank === null ? 'In dataset · NR' : `Ranked #${existing.rank}`
-            : 'Not ranked'
+      <div className="candidate-toolbar">
+        <div className="horizon-control" role="radiogroup" aria-label="Release window">
+          <span className="horizon-label">Window</span>
+          <div className="horizon-options">
+            {RELEASE_HORIZONS.map((days) => (
+              <button
+                className={cx('horizon-option', releaseHorizonDays === days && 'active')}
+                type="button"
+                role="radio"
+                aria-checked={releaseHorizonDays === days}
+                key={days}
+                onClick={() => onReleaseHorizonChange(days)}
+              >
+                {days}d
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="search-wrap candidate-search">
+          <Search size={15} />
+          <input
+            className="input search-input"
+            type="search"
+            aria-label="Search tracked assets"
+            placeholder="Search assets"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </div>
+        <select className="select compact-select" aria-label="Filter tracked assets by destination" value={destination} onChange={(event) => setDestination(event.target.value as 'all' | BuybackDestination)}>
+          <option value="all">All destinations</option>
+          {BUYBACK_DESTINATIONS.map((item) => <option key={item} value={item}>{DESTINATION_LABELS[item]}</option>)}
+        </select>
+        <select className="select compact-select" aria-label="Filter tracked assets by evidence" value={evidence} onChange={(event) => setEvidence(event.target.value as 'all' | EvidenceLevel)}>
+          <option value="all">All evidence</option>
+          {EVIDENCE_LEVELS.map((item) => <option key={item} value={item}>{EVIDENCE_LABELS[item]}</option>)}
+        </select>
+      </div>
 
-          return (
-            <li className="research-candidate-card" key={candidate.id}>
-              <div className="research-candidate-main">
-                <div className="research-candidate-identity">
-                  <div className="token-monogram">{monogram(candidate.symbol)}</div>
-                  <div>
-                    <div className="token-name">{candidate.name}</div>
-                    <div className="token-symbol">{candidate.symbol}</div>
-                  </div>
-                </div>
-                <div className="research-candidate-meta">
-                  <span className={cx('evidence-pill', evidenceTone(candidate.evidenceLevel))}>
-                    {EVIDENCE_LABELS[candidate.evidenceLevel]} · checked {candidate.verifiedOn}
-                  </span>
-                  <span className="mechanism-pill">{candidate.mechanismLabel}</span>
-                  <span className={cx('candidate-program-status', candidate.programStatus)}>{STATUS_LABELS[candidate.programStatus]}</span>
-                  <span className="candidate-status">{datasetStatus}</span>
-                </div>
-              </div>
+      <div className="candidate-table-scroll">
+        <table className="candidate-table">
+          <caption className="sr-only">Tracked tokens with recurring value-capture mechanisms</caption>
+          <thead>
+            <tr>
+              <th scope="col" className="candidate-rank-col">#</th>
+              <th scope="col" className="candidate-token-col">Token</th>
+              <th scope="col" className="numeric candidate-market-col">Market cap</th>
+              <th scope="col">Value capture</th>
+              <th scope="col" className="numeric">{releaseHorizonDays}d capture</th>
+              <th scope="col" className="numeric">{releaseHorizonDays}d pressure</th>
+              <th scope="col" className="numeric">Net yield</th>
+              <th scope="col" className="candidate-evidence-col">Mechanism evidence</th>
+              <th scope="col" className="candidate-updated-col">Updated</th>
+              <th scope="col" className="candidate-details-col" aria-label="Details" />
+            </tr>
+          </thead>
+          <tbody>
+            {visibleCandidates.map((candidate) => {
+              const snapshot = getSourcedCandidateSnapshot(candidate.id)
+              const marketCap = snapshot?.marketReleaseData.circulatingMarketCapUsd
+              const pressure = getCandidateSnapshotPressure(candidate.id, releaseHorizonDays)
+              const expanded = expandedId === candidate.id
+              const dataStatus = snapshot ? 'Partial data' : 'Data pending'
+              const sources = [...candidate.sources, ...(snapshot?.sources ?? [])]
+                .filter((source, index, all) => all.findIndex((item) => item.url === source.url) === index)
 
-              <p className="research-candidate-copy">{candidate.mechanismSummary}</p>
-
-              <dl className="candidate-evidence-grid">
-                <div><dt>Recurring evidence</dt><dd>{candidate.recurringEvidence}</dd></div>
-                <div><dt>Excluded context</dt><dd>{candidate.excludedOneOff}</dd></div>
-                <div><dt>Release caveat</dt><dd>{candidate.releaseCaveat}</dd></div>
-                {snapshot && <div><dt>Snapshot</dt><dd>{snapshot.summary}</dd></div>}
-              </dl>
-
-              <div className="research-candidate-actions">
-                <details className="candidate-sources">
-                  <summary>{candidate.sources.length} sources</summary>
-                  <div>
-                    {candidate.sources.map((source) => (
-                      <a href={source.url} key={source.url} target="_blank" rel="noreferrer" aria-label={`${source.label}, opens in a new tab`}>
-                        {source.label}<ExternalLink size={12} />
-                      </a>
-                    ))}
-                  </div>
-                </details>
-                <button
-                  className="button button-primary"
-                  type="button"
-                  aria-label={existing ? `Edit ${candidate.symbol} in dataset` : `Prefill Add token form with ${candidate.name} research metadata`}
-                  onClick={() => existing ? onEdit(existing.input) : onPrefill(candidate)}
-                >
-                  {existing ? `Edit ${candidate.symbol}` : `Prefill ${candidate.symbol}`}
-                </button>
-              </div>
-
-              {!existing && (
-                <p className="candidate-disclaimer">{snapshot
-                  ? `Market cap and 90/180/365-day release fields have a dated prefill. Executed capture and its observation window still require review before ${candidate.symbol} can be ranked.`
-                  : 'Mechanism verified, score not calculated. Market cap, executed capture, and release inputs remain for review.'}</p>
-              )}
-            </li>
-          )
-        })}
-      </ul>
+              return [
+                <tr className={cx('candidate-summary-row', expanded && 'expanded')} key={candidate.id}>
+                  <td className="candidate-rank-col"><span className="rank-badge">–</span></td>
+                  <td className="candidate-token-col">
+                    <div className="token-cell">
+                      <div className="token-monogram">{monogram(candidate.symbol)}</div>
+                      <div><div className="token-name">{candidate.name}</div><div className="token-symbol">{candidate.symbol} · {dataStatus}</div></div>
+                    </div>
+                  </td>
+                  <td className="numeric mono-value candidate-market-col">{marketCap === undefined ? 'Unknown' : formatUsd(marketCap)}</td>
+                  <td className="candidate-details-col">
+                    <div className="candidate-capture-cell">
+                      <span className="mechanism-pill">{DESTINATION_LABELS[candidate.buybackDestination]}</span>
+                      <span className={cx('candidate-program-status', candidate.programStatus)}>{STATUS_LABELS[candidate.programStatus]}</span>
+                    </div>
+                  </td>
+                  <td className="numeric mono-value"><span className="pending-value">Pending</span></td>
+                  <td className="numeric mono-value">{pressure === null || pressure === undefined ? <span className="pending-value">Pending</span> : formatUsd(pressure)}</td>
+                  <td className="numeric mono-value"><span className="pending-value">Pending</span></td>
+                  <td className="candidate-evidence-col"><span className={cx('evidence-pill', evidenceTone(candidate.evidenceLevel))}>{EVIDENCE_LABELS[candidate.evidenceLevel]}</span></td>
+                  <td className="candidate-updated-col mono-value">{snapshot?.asOfDate ?? candidate.verifiedOn}</td>
+                  <td>
+                    <button
+                      className="candidate-detail-toggle"
+                      type="button"
+                      aria-label={`${expanded ? 'Hide' : 'Show'} ${candidate.symbol} research details`}
+                      aria-expanded={expanded}
+                      aria-controls={expanded ? `candidate-detail-${candidate.id}` : undefined}
+                      onClick={() => setExpandedId(expanded ? null : candidate.id)}
+                    >
+                      <ChevronDown size={16} />
+                    </button>
+                  </td>
+                </tr>,
+                expanded && (
+                  <tr className="candidate-detail-row" id={`candidate-detail-${candidate.id}`} key={`${candidate.id}-detail`}>
+                    <td colSpan={10}>
+                      <div className="candidate-detail-shell">
+                        <div className="candidate-detail-heading">
+                          <span className="mechanism-pill">{candidate.mechanismLabel}</span>
+                          <p>{candidate.mechanismSummary}</p>
+                        </div>
+                        <dl className="candidate-detail-grid">
+                          <div><dt>Recurring evidence</dt><dd>{candidate.recurringEvidence}</dd></div>
+                          <div><dt>Excluded from score</dt><dd>{candidate.excludedOneOff}</dd></div>
+                          <div><dt>Release caveat</dt><dd>{candidate.releaseCaveat}</dd></div>
+                          {snapshot && <div><dt>Dated snapshot</dt><dd>{snapshot.summary}</dd></div>}
+                        </dl>
+                        <div className="candidate-sources" aria-label={`${candidate.symbol} sources`}>
+                          <strong>{sources.length} sources</strong>
+                          <div>
+                            {sources.map((source) => (
+                              <a href={source.url} key={source.url} target="_blank" rel="noreferrer" aria-label={`${source.label}, opens in a new tab`}>
+                                {source.label}<ExternalLink size={12} />
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ),
+              ]
+            })}
+          </tbody>
+        </table>
+        {visibleCandidates.length === 0 && <div className="candidate-empty">No tracked assets match these filters.</div>}
+      </div>
     </section>
   )
 }
@@ -665,19 +611,17 @@ function ResearchCandidates({ candidates, ranked, onPrefill, onEdit }: ResearchC
 interface TokenDrawerProps {
   token: TokenValueCaptureInput
   editingId: string | undefined
-  candidate: ResearchCandidate | null
   factors: AdjustmentFactors
   releaseHorizonDays: ReleaseHorizonDays
   onClose: () => void
   onSave: (token: TokenValueCaptureInput) => void
 }
 
-function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays, onClose, onSave }: TokenDrawerProps) {
+function TokenDrawer({ token, editingId, factors, releaseHorizonDays, onClose, onSave }: TokenDrawerProps) {
   const drawerRef = useRef<HTMLFormElement>(null)
   const [draft, setDraft] = useState<TokenValueCaptureInput>(() => ({ ...token, sourceUrls: [...token.sourceUrls] }))
   const [error, setError] = useState('')
   const [sources, setSources] = useState(token.sourceUrls.join('\n'))
-  const candidateSnapshot = candidate ? getSourcedCandidateSnapshot(candidate.id) : undefined
 
   useEffect(() => {
     const drawerElement = drawerRef.current
@@ -728,11 +672,6 @@ function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays,
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
     try {
-      if (candidate) {
-        const candidateError = getCandidateCaptureValidationError(candidate, draft)
-        if (candidateError) throw new Error(candidateError)
-      }
-
       const parsed = parseTokenInputs([{
         ...draft,
         id: editingId ?? `token-${Date.now()}`,
@@ -760,26 +699,12 @@ function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays,
         </div>
 
         <div className="drawer-body">
-          {candidate && (
-            <div className="candidate-prefill-note">
-              <Info size={16} />
-              <div>
-                <strong>{candidate.symbol} research draft</strong>
-                <span>{candidateSnapshot ? `A sourced ${candidateSnapshot.asOfDate} market and release snapshot was prefilled. ` : 'Identity, mechanism sources, and the mechanism check date were prefilled. Add sources for every numeric input. '}Evidence defaults to Estimate until the complete numeric record is reviewed. {candidate.editorGuidance} Fill the executed capture amount and observation window, then review the date and sources before saving. Blank releases mean unknown, not zero.</span>
-                <div className="candidate-prefill-sources">
-                  {candidate.sources.map((source) => (
-                    <a href={source.url} key={source.url} target="_blank" rel="noreferrer" aria-label={`${source.label}, opens in a new tab`}>{source.label}<ExternalLink size={11} /></a>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
           <section className="drawer-section">
             <div className="section-title">Identity <span>Required</span></div>
             <div className="form-grid">
               <div className="field">
                 <label htmlFor="token-name">Project name</label>
-                <input id="token-name" className="input" autoFocus={!candidate} required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Example Protocol" />
+                <input id="token-name" className="input" autoFocus required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Example Protocol" />
               </div>
               <div className="field">
                 <label htmlFor="token-symbol">Token symbol</label>
@@ -801,20 +726,20 @@ function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays,
             <div className="form-grid">
               <div className="field">
                 <label htmlFor="period-days">Observed period, days</label>
-                <input id="period-days" className="input" autoFocus={Boolean(candidate)} type="number" min="90" max="365" required value={candidate && draft.capturePeriodDays === 0 ? '' : draft.capturePeriodDays} onChange={(event) => setNumber('capturePeriodDays', event.target.value)} />
+                <input id="period-days" className="input" type="number" min="90" max="365" required value={draft.capturePeriodDays} onChange={(event) => setNumber('capturePeriodDays', event.target.value)} />
                 <p className="field-hint">Periods below 365 days are marked Provisional.</p>
               </div>
               <div className="field">
                 <label htmlFor="buybacks">Executed buybacks in period</label>
-                <input id="buybacks" className="input" type="number" min="0" required value={candidate?.accounting.recurringCaptureField === 'executedBuybacksUsdInPeriod' && draft.executedBuybacksUsdInPeriod === 0 ? '' : draft.executedBuybacksUsdInPeriod} onChange={(event) => setNumber('executedBuybacksUsdInPeriod', event.target.value)} />
+                <input id="buybacks" className="input" type="number" min="0" required value={draft.executedBuybacksUsdInPeriod} onChange={(event) => setNumber('executedBuybacksUsdInPeriod', event.target.value)} />
               </div>
               <div className="field">
                 <label htmlFor="direct-burns">Recurring direct burns in period</label>
-                <input id="direct-burns" className="input" type="number" min="0" required value={candidate?.accounting.recurringCaptureField === 'recurringDirectBurnsUsdInPeriod' && draft.recurringDirectBurnsUsdInPeriod === 0 ? '' : draft.recurringDirectBurnsUsdInPeriod} onChange={(event) => setNumber('recurringDirectBurnsUsdInPeriod', event.target.value)} />
+                <input id="direct-burns" className="input" type="number" min="0" required value={draft.recurringDirectBurnsUsdInPeriod} onChange={(event) => setNumber('recurringDirectBurnsUsdInPeriod', event.target.value)} />
               </div>
               <div className="field">
                 <label htmlFor="distributions">Holder distributions in period</label>
-                <input id="distributions" className="input" type="number" min="0" required value={candidate?.accounting.recurringCaptureField === 'holderDistributionsUsdInPeriod' && draft.holderDistributionsUsdInPeriod === 0 ? '' : draft.holderDistributionsUsdInPeriod} onChange={(event) => setNumber('holderDistributionsUsdInPeriod', event.target.value)} />
+                <input id="distributions" className="input" type="number" min="0" required value={draft.holderDistributionsUsdInPeriod} onChange={(event) => setNumber('holderDistributionsUsdInPeriod', event.target.value)} />
               </div>
               <div className="field">
                 <label htmlFor="destination">Buyback destination</label>
@@ -1049,6 +974,9 @@ function ImportDrawer({ onClose, onImport }: ImportDrawerProps) {
         return
       }
       const state = parsed as StoredStateInput
+      if (state.datasetType === 'illustrative') {
+        throw new Error('Legacy demo datasets are no longer supported. Import sourced token data instead.')
+      }
       onImport(
         parseTokenInputs(state.tokens),
         state.factors ? parseAdjustmentFactors(state.factors) : undefined,
@@ -1087,31 +1015,27 @@ function App() {
   const initial = useRef(readInitialState()).current
   const [tokens, setTokens] = useState(initial.tokens)
   const [factors, setFactors] = useState<AdjustmentFactors>(initial.factors)
-  const [datasetType, setDatasetType] = useState<DatasetType>(initial.datasetType)
   const [releaseHorizonDays, setReleaseHorizonDays] =
     useState<ReleaseHorizonDays>(initial.releaseHorizonDays)
   const [drawer, setDrawer] = useState<Drawer>(null)
   const [editingToken, setEditingToken] = useState<TokenValueCaptureInput | null>(null)
-  const [draftCandidate, setDraftCandidate] = useState<ResearchCandidate | null>(null)
   const tokenTriggerRef = useRef<HTMLElement | null>(null)
   const [search, setSearch] = useState('')
   const [mechanismFilter, setMechanismFilter] = useState<'all' | BuybackDestination>('all')
   const [evidenceFilter, setEvidenceFilter] = useState<'all' | EvidenceLevel>('all')
   const [sort, setSort] = useState<SortState>({ key: 'rank', direction: 'asc' })
   const [exportOpen, setExportOpen] = useState(false)
-  const [bannerVisible, setBannerVisible] = useState(true)
   const [toast, setToast] = useState('')
 
   useEffect(() => {
     const state: StoredState = {
-      version: 2,
-      datasetType,
+      version: 3,
       tokens,
       factors,
       releaseHorizonDays,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  }, [datasetType, factors, releaseHorizonDays, tokens])
+  }, [factors, releaseHorizonDays, tokens])
 
   useEffect(() => {
     if (!toast) return
@@ -1124,7 +1048,6 @@ function App() {
       if (event.key === 'Escape') {
         const closingTokenDrawer = drawer === 'token'
         setDrawer(null)
-        setDraftCandidate(null)
         setExportOpen(false)
         if (closingTokenDrawer) {
           window.requestAnimationFrame(() => tokenTriggerRef.current?.focus())
@@ -1184,34 +1107,18 @@ function App() {
 
   const closeTokenDrawer = () => {
     setDrawer(null)
-    setDraftCandidate(null)
     restoreTokenTrigger()
   }
 
   const openAdd = () => {
     rememberTokenTrigger()
     setEditingToken(null)
-    setDraftCandidate(null)
     setDrawer('token')
   }
 
   const openEdit = (token: TokenValueCaptureInput) => {
     rememberTokenTrigger()
     setEditingToken(token)
-    setDraftCandidate(null)
-    setDrawer('token')
-  }
-
-  const openCandidate = (candidate: ResearchCandidate) => {
-    rememberTokenTrigger()
-    const seed = createCandidateEditorSeed(candidate)
-    setEditingToken({
-      ...EMPTY_TOKEN,
-      ...seed,
-      id: undefined,
-      capturePeriodDays: 0,
-    })
-    setDraftCandidate(candidate)
     setDrawer('token')
   }
 
@@ -1219,9 +1126,7 @@ function App() {
     setTokens((current) => editingToken?.id
       ? current.map((item) => item.id === editingToken.id ? token : item)
       : [...current, token])
-    setDatasetType('custom')
     setDrawer(null)
-    setDraftCandidate(null)
     restoreTokenTrigger()
     setToast(editingToken?.id ? `${token.symbol} updated` : `${token.symbol} added`)
   }
@@ -1229,22 +1134,12 @@ function App() {
   const deleteToken = (token: TokenValueCaptureInput) => {
     if (!window.confirm(`Delete ${token.name} (${token.symbol}) from this local dataset?`)) return
     setTokens((current) => current.filter((item) => item.id !== token.id))
-    setDatasetType('custom')
     setToast(`${token.symbol} removed`)
-  }
-
-  const restoreSample = () => {
-    setTokens(cloneSample())
-    setFactors(DEFAULT_ADJUSTMENT_FACTORS)
-    setReleaseHorizonDays(365)
-    setDatasetType('illustrative')
-    setToast('Illustrative dataset restored')
   }
 
   const exportJson = () => {
     const state: StoredState = {
-      version: 2,
-      datasetType,
+      version: 3,
       tokens,
       factors,
       releaseHorizonDays,
@@ -1264,8 +1159,7 @@ function App() {
 
   const copyShareLink = async () => {
     const state: StoredState = {
-      version: 2,
-      datasetType,
+      version: 3,
       tokens,
       factors,
       releaseHorizonDays,
@@ -1288,7 +1182,6 @@ function App() {
     setTokens(nextTokens)
     if (nextFactors) setFactors(nextFactors)
     if (nextReleaseHorizonDays) setReleaseHorizonDays(nextReleaseHorizonDays)
-    setDatasetType('custom')
     setDrawer(null)
     setToast(`${nextTokens.length} tokens imported`)
   }
@@ -1324,25 +1217,17 @@ function App() {
           <p className="hero-copy">Rank tokens by executed, recurring economic value returned against the next {releaseHorizonDays} days of unlocks and inflationary emissions. Capture and releases use the same window.</p>
         </div>
         <div className="hero-side">
-          {datasetType === 'illustrative' && <span className="sample-badge">Illustrative sample data</span>}
           <button className="button button-ghost" type="button" onClick={() => setDrawer('methodology')}><CircleHelp size={15} /> Methodology</button>
         </div>
       </section>
 
-      {datasetType === 'illustrative' && bannerVisible && (
-        <div className="sample-banner">
-          <div><strong>Demo dataset.</strong> Every project and figure below is fictional and exists only to demonstrate ranking behavior. Import researched data before drawing conclusions.</div>
-          <button type="button" aria-label="Dismiss sample data message" onClick={() => setBannerVisible(false)}><X size={15} /></button>
-        </div>
-      )}
-
       <ResearchCandidates
         candidates={RESEARCH_CANDIDATES}
-        ranked={ranked}
-        onPrefill={openCandidate}
-        onEdit={openEdit}
+        releaseHorizonDays={releaseHorizonDays}
+        onReleaseHorizonChange={setReleaseHorizonDays}
       />
 
+      {tokens.length > 0 ? <>
       <section className="metrics-grid" aria-label="Dataset metrics">
         <article className="metric-card">
           <div className="metric-label"><span>Tokens ranked</span><Layers3 size={15} /></div>
@@ -1369,23 +1254,6 @@ function App() {
       <section className="workspace-card" aria-label="Token rankings">
         <div className="workspace-toolbar">
           <div className="filter-group">
-            <div className="horizon-control" role="radiogroup" aria-label="Release window">
-              <span className="horizon-label">Release window</span>
-              <div className="horizon-options">
-                {RELEASE_HORIZONS.map((days) => (
-                  <button
-                    className={cx('horizon-option', releaseHorizonDays === days && 'active')}
-                    type="button"
-                    role="radio"
-                    aria-checked={releaseHorizonDays === days}
-                    key={days}
-                    onClick={() => setReleaseHorizonDays(days)}
-                  >
-                    {days}d
-                  </button>
-                ))}
-              </div>
-            </div>
             <div className="search-wrap">
               <Search size={15} />
               <input className="input search-input" type="search" aria-label="Search tokens" placeholder="Search project or symbol" value={search} onChange={(event) => setSearch(event.target.value)} />
@@ -1401,7 +1269,6 @@ function App() {
           </div>
           <div className="control-actions">
             {activeFilters > 0 && <button className="button button-ghost" type="button" onClick={() => { setSearch(''); setMechanismFilter('all'); setEvidenceFilter('all') }}>Clear {activeFilters}</button>}
-            <button className="button button-ghost desktop-only" type="button" onClick={restoreSample}>{datasetType === 'illustrative' ? 'Reset sample' : 'Load sample'}</button>
             <button className="button" type="button" onClick={() => setDrawer('factors')}><SlidersHorizontal size={15} /> Factors</button>
             <button className="button button-primary desktop-only" type="button" onClick={openAdd}><Plus size={15} /> Add token</button>
           </div>
@@ -1495,11 +1362,24 @@ function App() {
           <div>{visibleRows.length} visible · {ranked.filter((row) => !row.metrics.rankable).length} unranked · {releaseHorizonDays}d horizon · factors are user-adjustable</div>
         </footer>
       </section>
+      </> : (
+        <section className="dataset-empty-panel" aria-label="Personal ranking dataset">
+          <div>
+            <span className="research-kicker">Optional workspace</span>
+            <h2>Build a ranked dataset</h2>
+            <p>The market table stays read-only. Add or import fully sourced numbers when you are ready to calculate rankings.</p>
+          </div>
+          <div className="dataset-empty-actions">
+            <button className="button" type="button" onClick={() => setDrawer('import')}><Upload size={15} /> Import data</button>
+            <button className="button button-primary" type="button" onClick={openAdd}><Plus size={15} /> Add token</button>
+          </div>
+        </section>
+      )}
 
       <button className="button button-primary mobile-add" type="button" onClick={openAdd}><Plus size={16} /> Add token</button>
 
       {drawer === 'token' && (
-        <TokenDrawer token={editingToken ?? EMPTY_TOKEN} editingId={editingToken?.id} candidate={draftCandidate} factors={factors} releaseHorizonDays={releaseHorizonDays} onClose={closeTokenDrawer} onSave={saveToken} />
+        <TokenDrawer token={editingToken ?? EMPTY_TOKEN} editingId={editingToken?.id} factors={factors} releaseHorizonDays={releaseHorizonDays} onClose={closeTokenDrawer} onSave={saveToken} />
       )}
       {drawer === 'methodology' && (
         <MethodologyDrawer factors={factors} releaseHorizonDays={releaseHorizonDays} onClose={() => setDrawer(null)} onOpenFactors={() => setDrawer('factors')} />

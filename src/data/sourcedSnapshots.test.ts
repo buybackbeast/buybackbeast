@@ -12,18 +12,27 @@ describe('sourced candidate snapshots', () => {
     expect(new Set(candidateIds).size).toBe(candidateIds.length)
   })
 
-  it('values the scheduled UNI growth-budget tranches at the snapshot price', () => {
+  it('keeps UNI market and release data together in the dated read-only snapshot', () => {
     const snapshot = getSourcedCandidateSnapshot('uniswap')
 
     expect(snapshot).toBeDefined()
     expect(snapshot?.tokenPriceUsd).toBe(9.07)
-    expect(snapshot?.prefill.unlockUsd90d).toBe(5_000_000 * 9.07)
-    expect(snapshot?.prefill.unlockUsd180d).toBe(10_000_000 * 9.07)
-    expect(snapshot?.prefill.unlockUsd365d).toBe(20_000_000 * 9.07)
+    expect(snapshot?.marketReleaseData).toMatchObject({
+      circulatingMarketCapUsd: 5_627_000_000,
+      fdvUsd: 9_070_000_000,
+      dataDate: '2026-09-30',
+    })
+    expect(snapshot?.marketReleaseData.unlockUsd90d).toBe(5_000_000 * 9.07)
+    expect(snapshot?.marketReleaseData.unlockUsd180d).toBe(10_000_000 * 9.07)
+    expect(snapshot?.marketReleaseData.unlockUsd365d).toBe(20_000_000 * 9.07)
+    expect(snapshot?.sources.map((source) => source.url)).toEqual(expect.arrayContaining([
+      'https://defillama.com/unlocks/uniswap',
+      'https://dune.com/uniswaplabs/uni-burn-tracker-l1l2',
+    ]))
   })
 
   it('records verified inactive inflation separately from treasury releases', () => {
-    const emissions = getSourcedCandidateSnapshot('uniswap')?.prefill
+    const emissions = getSourcedCandidateSnapshot('uniswap')?.marketReleaseData
 
     expect(emissions?.inflationaryEmissionsUsd90d).toBe(0)
     expect(emissions?.inflationaryEmissionsUsd180d).toBe(0)

@@ -2,16 +2,7 @@ import type {
   BuybackDestination,
   EvidenceLevel,
   ProgramStatus,
-  TokenValueCaptureInput,
 } from '../lib'
-import { getSourcedCandidateSnapshot } from './sourcedSnapshots'
-
-type RecurringCaptureField =
-  | 'executedBuybacksUsdInPeriod'
-  | 'recurringDirectBurnsUsdInPeriod'
-  | 'holderDistributionsUsdInPeriod'
-
-type ReleasePressureCategory = 'unlocks' | 'inflationaryEmissions'
 
 export interface ResearchCandidate {
   id: string
@@ -26,12 +17,6 @@ export interface ResearchCandidate {
   recurringEvidence: string
   excludedOneOff: string
   releaseCaveat: string
-  editorGuidance: string
-  accounting: {
-    recurringCaptureField: RecurringCaptureField
-    oneOffContextField: 'oneOffBurnsUsd'
-    releasePressureCategory: ReleasePressureCategory
-  }
   sources: readonly {
     label: string
     url: string
@@ -60,13 +45,6 @@ export const RESEARCH_CANDIDATES = [
       'The 100M UNI retroactive treasury burn is non-recurring and must remain outside the recurring score.',
     releaseCaveat:
       'DefiLlama marks the original UNI allocation vesting 100% unlocked. At the September 30 snapshot, the separate growth-budget contract still had a 5M UNI quarterly amount and 25M UNI allowance. Its allowance can be revoked, so scheduled tranches are forward pressure, not guaranteed sales.',
-    editorGuidance:
-      'The dated market-cap and release snapshot is prefilled from DefiLlama plus the official UNIVesting schedule. Enter the USD value of UNI actually burned in executed releaser transactions under recurring direct burns, valued at each burn timestamp. Do not substitute gross fees or count the 100M treasury burn as recurring.',
-    accounting: {
-      recurringCaptureField: 'recurringDirectBurnsUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'unlocks',
-    },
     sources: [
       {
         label: 'Executed UNIfication proposal',
@@ -123,13 +101,6 @@ export const RESEARCH_CANDIDATES = [
       'Count the fee-funded purchase and subsequent burn once. HyperEVM gas burns are a separate stream and must not be duplicated.',
     releaseCaveat:
       'Staking rewards come from the future-emissions reserve, and contributor or community releases must be included in forward pressure.',
-    editorGuidance:
-      'Enter the USD value of executed Assistance Fund purchases under executed buybacks and mark the bought-and-burned subset for context. Add separately measured gas burns only if they are not already included.',
-    accounting: {
-      recurringCaptureField: 'executedBuybacksUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'inflationaryEmissions',
-    },
     sources: [
       {
         label: 'Official trading fee mechanics',
@@ -162,13 +133,6 @@ export const RESEARCH_CANDIDATES = [
       'The dashboard notes that custom-pair revenue and buybacks may not be fully reflected, so do not extrapolate missing activity.',
     releaseCaveat:
       'The 50% qualifying-revenue commitment is locked for one year from April 28, 2026. The official page does not provide a complete release schedule for the gap between circulating and total supply.',
-    editorGuidance:
-      'Enter executed daily purchases under executed buybacks and the same amount as the bought-and-burned subset, not as a second direct-burn stream. Keep unknown releases null.',
-    accounting: {
-      recurringCaptureField: 'executedBuybacksUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'unlocks',
-    },
     sources: [
       {
         label: 'Official PUMP dashboard and token page',
@@ -197,13 +161,6 @@ export const RESEARCH_CANDIDATES = [
       'Use only fee-funded executed purchases for capture. Do not count gross token burns again or treat net supply change as cash flow.',
     releaseCaveat:
       'CAKE continues minting for farms, products, and ecosystem incentives. Gross burn must be measured alongside emissions even under the 400M maximum supply.',
-    editorGuidance:
-      'Enter fee-funded market purchases under executed buybacks and the bought-and-burned subset for context. Enter the measured CAKE minted during each forward horizon as inflationary emissions.',
-    accounting: {
-      recurringCaptureField: 'executedBuybacksUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'inflationaryEmissions',
-    },
     sources: [
       {
         label: 'CAKE Tokenomics 3.0 implementation',
@@ -236,13 +193,6 @@ export const RESEARCH_CANDIDATES = [
       'Do not count both the revenue basket distributed and the corresponding INJ burn as separate capture.',
     releaseCaveat:
       'Continuing staking issuance is the material release pressure. IIP-617 reduces new issuance but does not eliminate it.',
-    editorGuidance:
-      'Enter the USD value of revenue assets actually distributed during the observation window under holder distributions. Leave the paired INJ burn out of recurring direct burns to avoid double counting.',
-    accounting: {
-      recurringCaptureField: 'holderDistributionsUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'inflationaryEmissions',
-    },
     sources: [
       {
         label: 'Community BuyBack guide',
@@ -275,13 +225,6 @@ export const RESEARCH_CANDIDATES = [
       'Treasury-held LIT is not a burn and receives the default zero destination factor until its final disposition is verified.',
     releaseCaveat:
       'Team and investor allocations have a one-year cliff followed by three-year linear vesting. The cliff is near December 2026.',
-    editorGuidance:
-      'Enter only executed fee-funded market purchases under executed buybacks. Do not classify treasury accumulation as a burn, and source the forward vesting value separately.',
-    accounting: {
-      recurringCaptureField: 'executedBuybacksUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'unlocks',
-    },
     sources: [
       {
         label: 'LIT utility and buyback mechanics',
@@ -314,13 +257,6 @@ export const RESEARCH_CANDIDATES = [
       'The matching reserve burn is non-cash supply reduction. Do not add it to the fee-funded staker distribution in the same score.',
     releaseCaveat:
       'Airdrop supply releases over 80 months. Team vesting starts after a September 2026 cliff at 10M ASTER per month for 40 months.',
-    editorGuidance:
-      'Enter the USD value of purchased ASTER actually delivered to veASTER stakers under holder distributions. Record the matching reserve burn only as excluded one-off context.',
-    accounting: {
-      recurringCaptureField: 'holderDistributionsUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'unlocks',
-    },
     sources: [
       {
         label: 'ASTER tokenomics',
@@ -353,13 +289,6 @@ export const RESEARCH_CANDIDATES = [
       'Migration-offset and one-time treasury burns stay outside recurring capture. Governance can change the 55/45 allocation.',
     releaseCaveat:
       'New SKY emissions are disabled under current documentation, but MKR-to-SKY migration remains open under a rising delayed-upgrade penalty.',
-    editorGuidance:
-      'Enter the executed 55% market-purchase leg under executed buybacks. The separate 45% USDS leg may be entered under holder distributions, but never enter gross surplus again on top of both legs.',
-    accounting: {
-      recurringCaptureField: 'executedBuybacksUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'inflationaryEmissions',
-    },
     sources: [
       {
         label: 'Understanding the SKY token',
@@ -392,13 +321,6 @@ export const RESEARCH_CANDIDATES = [
       'Points and airdrops distributed in kind are not fee-funded capture. Do not count gross fees and the resulting purchased-token distribution twice.',
     releaseCaveat:
       'Team and investor vesting completed in September 2024. Tokenomics specifies terminal 2% annual incentive inflation from April 2026, subject to governance.',
-    editorGuidance:
-      'Enter the USD value of purchased PENDLE actually allocated to active sPENDLE holders under holder distributions. Enter terminal incentive issuance as inflationary emissions.',
-    accounting: {
-      recurringCaptureField: 'holderDistributionsUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'inflationaryEmissions',
-    },
     sources: [
       {
         label: 'sPENDLE mechanism',
@@ -431,13 +353,6 @@ export const RESEARCH_CANDIDATES = [
       'The historical 1.1M BANANA burn and Banana Credits utility burns are not part of the recurring revenue-share flow.',
     releaseCaveat:
       'Treasury and team allocations remain a source of releases, while Banana Bonus emissions use treasury tokens under an adjustable multiplier.',
-    editorGuidance:
-      'Enter actual ETH, SOL, and market-bought BANANA claims under holder distributions. Treat Bonus emissions and scheduled treasury or team releases as release pressure without duplication.',
-    accounting: {
-      recurringCaptureField: 'holderDistributionsUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'unlocks',
-    },
     sources: [
       {
         label: 'BANANA holder rewards',
@@ -470,13 +385,6 @@ export const RESEARCH_CANDIDATES = [
       'The separate BIP-99 discretionary fair-value buyback authority has no verified execution here and is excluded from recurring capture.',
     releaseCaveat:
       'BIFI has a fixed 80,000 supply, no mint or burn functions, and was fully distributed by July 2022. Treasury-held tokens can still recirculate through governance.',
-    editorGuidance:
-      'Enter the USD value delivered through BIFI compounding or ETH distributions under holder distributions. Do not also count the same BIFI market purchase under executed buybacks.',
-    accounting: {
-      recurringCaptureField: 'holderDistributionsUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'unlocks',
-    },
     sources: [
       {
         label: 'BIFI token and holder incentives',
@@ -509,13 +417,6 @@ export const RESEARCH_CANDIDATES = [
       'Staked tokens are DAO-controlled and could later be unstaked or redeployed. They are not burned.',
     releaseCaveat:
       'Original Community Treasury vesting ended in August 2026, but governance can enact annual inflation, so actual minting must be verified before entering zero.',
-    editorGuidance:
-      'Enter executed market purchases under executed buybacks with the treasury destination while the staked tokens remain DAO-controlled. Source any active inflation separately.',
-    accounting: {
-      recurringCaptureField: 'executedBuybacksUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'inflationaryEmissions',
-    },
     sources: [
       {
         label: 'Official dYdX buyback tracker',
@@ -548,13 +449,6 @@ export const RESEARCH_CANDIDATES = [
       'The contingent plan to distribute treasury GMX to stakers is not current holder capture and must not be counted before execution.',
     releaseCaveat:
       'Existing esGMX converts into GMX over 365 days. Minting above the forecast 13.25M maximum requires governance.',
-    editorGuidance:
-      'Enter executed purchases under executed buybacks and retain the treasury destination while distributions are suspended. Enter esGMX vesting as forward release pressure.',
-    accounting: {
-      recurringCaptureField: 'executedBuybacksUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'unlocks',
-    },
     sources: [
       {
         label: 'GMX tokenomics',
@@ -587,13 +481,6 @@ export const RESEARCH_CANDIDATES = [
       'A historical burn of roughly 135M Litterbox JUP is not evidence that current purchases are burned. Proposed 70% buyback-and-burn changes are also excluded.',
     releaseCaveat:
       'ASR continues at 50M JUP per quarter from already circulating unclaimed tokens, while team and community schedules remain governance-sensitive.',
-    editorGuidance:
-      'Enter executed open-market purchases under executed buybacks. Keep the destination as treasury unless the measured purchases are proven irreversibly locked or burned.',
-    accounting: {
-      recurringCaptureField: 'executedBuybacksUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'unlocks',
-    },
     sources: [
       {
         label: 'Net-Zero Emissions proposal',
@@ -626,13 +513,6 @@ export const RESEARCH_CANDIDATES = [
       'Wallet accumulation is not permanent supply removal and receives the default zero treasury destination factor.',
     releaseCaveat:
       'Team and seed vesting completed in February 2024, but the mining reserve continues to emit roughly 1.9M RAY annually.',
-    editorGuidance:
-      'Value executed buyback transactions during one consistent observation window. Enter mining-reserve releases under inflationary emissions and do not call the holding wallet a burn.',
-    accounting: {
-      recurringCaptureField: 'executedBuybacksUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'inflationaryEmissions',
-    },
     sources: [
       {
         label: 'RAY buybacks',
@@ -665,13 +545,6 @@ export const RESEARCH_CANDIDATES = [
       'Reserve balances remain protocol-controlled and receive the default zero treasury destination factor despite a multi-day withdrawal timelock.',
     releaseCaveat:
       'Supply is capped at 1B LINK, but the official circulating-supply page states a current release schedule of 7% of total supply per year.',
-    editorGuidance:
-      'Enter only revenue-funded LINK acquisitions under executed buybacks. Keep the destination as treasury and enter the official forward release schedule as release pressure.',
-    accounting: {
-      recurringCaptureField: 'executedBuybacksUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'unlocks',
-    },
     sources: [
       {
         label: 'Q2 2026 quarterly review',
@@ -704,13 +577,6 @@ export const RESEARCH_CANDIDATES = [
       'SSF holdings are not burned and may be redeployed for liquidity, growth, or strategic activity. Do not count the total fund balance as period capture.',
     releaseCaveat:
       'Final legacy MIP-009 and MIP-010 issuance runs through October 2026, while repurchased SSF tokens may later return to circulation.',
-    editorGuidance:
-      'Enter the monthly executed purchase totals under executed buybacks and retain the treasury destination. Source remaining legacy issuance under inflationary emissions.',
-    accounting: {
-      recurringCaptureField: 'executedBuybacksUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'inflationaryEmissions',
-    },
     sources: [
       {
         label: 'MIP-021 revenue-scaled buyback',
@@ -743,13 +609,6 @@ export const RESEARCH_CANDIDATES = [
       'The proposed 60M to 85M COW burn trial and flexible future mandate are not executed and remain outside current capture.',
     releaseCaveat:
       'Solver rewards, team compensation, and grants continue to emit COW. The current target offsets solver emissions, not necessarily every DAO release.',
-    editorGuidance:
-      'Enter executed weekly TWAP purchases under executed buybacks and solver, team, and grant issuance under emissions. Keep the recycled destination unless tokens are verifiably retired.',
-    accounting: {
-      recurringCaptureField: 'executedBuybacksUsdInPeriod',
-      oneOffContextField: 'oneOffBurnsUsd',
-      releasePressureCategory: 'inflationaryEmissions',
-    },
     sources: [
       {
         label: 'CoW value-distribution review',
@@ -766,65 +625,3 @@ export const RESEARCH_CANDIDATES = [
     ],
   },
 ] as const satisfies readonly ResearchCandidate[]
-
-export function createCandidateEditorSeed(candidate: ResearchCandidate): Pick<
-  TokenValueCaptureInput,
-  | 'name'
-  | 'symbol'
-  | 'circulatingMarketCapUsd'
-  | 'fdvUsd'
-  | 'unlockUsd90d'
-  | 'inflationaryEmissionsUsd90d'
-  | 'unlockUsd180d'
-  | 'inflationaryEmissionsUsd180d'
-  | 'unlockUsd365d'
-  | 'inflationaryEmissionsUsd365d'
-  | 'buybackDestination'
-  | 'evidenceLevel'
-  | 'programStatus'
-  | 'dataDate'
-  | 'sourceUrls'
-> {
-  const snapshot = getSourcedCandidateSnapshot(candidate.id)
-
-  return {
-    name: candidate.name,
-    symbol: candidate.symbol,
-    circulatingMarketCapUsd: snapshot?.prefill.circulatingMarketCapUsd ?? 0,
-    fdvUsd: snapshot?.prefill.fdvUsd ?? 0,
-    unlockUsd90d: snapshot?.prefill.unlockUsd90d ?? null,
-    inflationaryEmissionsUsd90d: snapshot?.prefill.inflationaryEmissionsUsd90d ?? null,
-    unlockUsd180d: snapshot?.prefill.unlockUsd180d ?? null,
-    inflationaryEmissionsUsd180d: snapshot?.prefill.inflationaryEmissionsUsd180d ?? null,
-    unlockUsd365d: snapshot?.prefill.unlockUsd365d ?? null,
-    inflationaryEmissionsUsd365d: snapshot?.prefill.inflationaryEmissionsUsd365d ?? null,
-    buybackDestination: candidate.buybackDestination,
-    // Mechanism evidence does not prove every numeric snapshot input.
-    evidenceLevel: 'estimate',
-    programStatus: candidate.programStatus,
-    dataDate: snapshot?.prefill.dataDate ?? candidate.verifiedOn,
-    sourceUrls: snapshot?.sources.map((source) => source.url)
-      ?? candidate.sources.map((source) => source.url),
-  }
-}
-
-export function getCandidateCaptureValidationError(
-  candidate: ResearchCandidate,
-  input: Pick<
-    TokenValueCaptureInput,
-    | 'capturePeriodDays'
-    | 'executedBuybacksUsdInPeriod'
-    | 'recurringDirectBurnsUsdInPeriod'
-    | 'holderDistributionsUsdInPeriod'
-  >,
-): string | null {
-  if (input.capturePeriodDays < 90 || input.capturePeriodDays > 365) {
-    return 'Enter an observation window between 90 and 365 days.'
-  }
-
-  if (input[candidate.accounting.recurringCaptureField] <= 0) {
-    return `Enter a positive executed capture amount for the verified ${candidate.symbol} mechanism.`
-  }
-
-  return null
-}

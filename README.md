@@ -68,7 +68,7 @@ An executed buyback does not always remove supply permanently. VALUEBEAST theref
 - Explicit protection against bought-and-burned double counting
 - Editable buyback destination factors
 - Evidence and mechanism filters
-- Source-linked research candidates with dated market and release prefills that never bypass the validated token workflow
+- Source-linked, read-only research table with dated market and release snapshots
 - Token add and edit workflow with source URLs and measurement dates
 - CSV and JSON import and export
 - Local browser storage with no account, wallet, or API key
@@ -76,7 +76,7 @@ An executed buyback does not always remove supply permanently. VALUEBEAST theref
 - Responsive desktop and mobile interface
 - Unit-tested calculations and automated GitHub checks
 
-The bundled ranking dataset is fictional and exists only to demonstrate the calculations. Research candidates and their dated source snapshots remain separate from ranking rows. A candidate enters the ranking only after a user completes and saves the remaining inputs.
+No fictional ranking data is bundled. Research candidates and their dated source snapshots are read-only and remain separate from editable ranking rows; users can add or import fully sourced observations for calculation.
 
 The source-linked candidate universe currently covers UNI, HYPE, PUMP, CAKE, INJ, LIT, ASTER, SKY, PENDLE, BANANA, BIFI, DYDX, GMX, JUP, RAY, LINK, SYRUP, and COW. CeFi exchange tokens and previously rejected FORM, AAVE, and GNS leads are not included. Treasury-held or recycled purchases remain visible for research but receive a zero destination factor by default.
 
@@ -110,7 +110,7 @@ VALUEBEAST follows a few strict rules to keep comparisons useful:
 - Value forward unlocks with the same token price used for market capitalization.
 - Record source URLs and disclose estimates or annualization.
 - Treat treasury-held tokens differently from permanently removed supply.
-- Never convert a research candidate into a score with placeholder zeroes. Missing market-cap, capture, unlock, or emissions inputs must remain incomplete until sourced.
+- Read-only research candidates are not ranking inputs. Missing market-cap, capture, unlock, or emissions data must remain unknown until sourced rather than being replaced with placeholder zeroes.
 - Treat a provider's completed original vesting schedule separately from later treasury vesting contracts or governance-authorized releases.
 
 See [the methodology](docs/methodology.md) for edge cases and a worked example.
