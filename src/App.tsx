@@ -214,7 +214,7 @@ function formatPct(value: number | null | undefined): string {
 
 function formatMarketSnapshotTime(timestamp: string): string {
   const date = new Date(timestamp)
-  if (!Number.isFinite(date.getTime())) return 'CMC'
+  if (!Number.isFinite(date.getTime())) return 'Unavailable'
   const day = new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
@@ -223,10 +223,10 @@ function formatMarketSnapshotTime(timestamp: string): string {
   const time = new Intl.DateTimeFormat('en-US', {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false,
+    hourCycle: 'h23',
     timeZone: 'UTC',
   }).format(date)
-  return `CMC · ${day} ${time}Z`
+  return `${day} ${time} UTC`
 }
 
 function formatRatio(value: number | null | undefined, rankable: boolean): string {
@@ -636,7 +636,6 @@ function getCandidateSnapshotPressure(candidateId: string, horizon: ReleaseHoriz
 function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonChange }: ResearchCandidatesProps) {
   const [query, setQuery] = useState('')
   const [destination, setDestination] = useState<'all' | BuybackDestination>('all')
-  const [evidence, setEvidence] = useState<'all' | EvidenceLevel>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [marketSnapshots, setMarketSnapshots] = useState<readonly CoinMarketCapSnapshot[]>(
     COIN_MARKET_CAP_SNAPSHOTS,
@@ -710,7 +709,7 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
           ? 'Update delayed'
           : 'Live update unavailable'
   const latestSnapshotLabel = latestMarketTimestamp
-    ? formatMarketSnapshotTime(latestMarketTimestamp).replace('CMC · ', '')
+    ? formatMarketSnapshotTime(latestMarketTimestamp)
     : 'Unavailable'
   const visibleCandidates = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -720,10 +719,9 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
         || candidate.symbol.toLowerCase().includes(normalizedQuery)
         || candidate.mechanismLabel.toLowerCase().includes(normalizedQuery)
       const matchesDestination = destination === 'all' || candidate.buybackDestination === destination
-      const matchesEvidence = evidence === 'all' || candidate.evidenceLevel === evidence
-      return matchesQuery && matchesDestination && matchesEvidence
+      return matchesQuery && matchesDestination
     })
-  }, [candidates, destination, evidence, query])
+  }, [candidates, destination, query])
 
   return (
     <section className="research-candidates" aria-labelledby="research-candidates-title">
@@ -785,10 +783,6 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
           <option value="all">All destinations</option>
           {BUYBACK_DESTINATIONS.map((item) => <option key={item} value={item}>{DESTINATION_LABELS[item]}</option>)}
         </select>
-        <select className="select compact-select" aria-label="Filter tracked assets by evidence" value={evidence} onChange={(event) => setEvidence(event.target.value as 'all' | EvidenceLevel)}>
-          <option value="all">All evidence</option>
-          {EVIDENCE_LEVELS.map((item) => <option key={item} value={item}>{EVIDENCE_LABELS[item]}</option>)}
-        </select>
       </div>
 
       <div className="candidate-table-scroll">
@@ -803,8 +797,6 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
               <th scope="col" className="numeric">{releaseHorizonDays}d capture</th>
               <th scope="col" className="numeric">{releaseHorizonDays}d pressure</th>
               <th scope="col" className="numeric">Net yield</th>
-              <th scope="col" className="candidate-evidence-col">Mechanism evidence</th>
-              <th scope="col" className="candidate-updated-col">Research updated</th>
               <th scope="col" className="candidate-details-col" aria-label="Details" />
             </tr>
           </thead>
@@ -815,7 +807,6 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
               const marketCap = marketSnapshot?.circulatingMarketCapUsd
               const pressure = getCandidateSnapshotPressure(candidate.id, releaseHorizonDays)
               const expanded = expandedId === candidate.id
-              const dataStatus = snapshot ? 'Partial release data' : 'Market data only'
               const marketSources = marketSnapshot
                 ? [{
                     label: `CoinMarketCap ${candidate.symbol} market data`,
@@ -831,32 +822,24 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
                   <td className="candidate-token-col">
                     <div className="token-cell">
                       <TokenLogo id={candidate.id} name={candidate.name} symbol={candidate.symbol} />
-                      <div><div className="token-name">{candidate.name}</div><div className="token-symbol">{candidate.symbol} · {dataStatus}</div></div>
+                      <div><div className="token-name">{candidate.name}</div><div className="token-symbol">{candidate.symbol}</div></div>
                     </div>
                   </td>
-                  <td
-                    className="numeric mono-value candidate-market-col"
-                    title={marketSnapshot ? `CoinMarketCap snapshot · ${marketSnapshot.asOfTimestamp}` : undefined}
-                  >
+                  <td className="numeric mono-value candidate-market-col">
                     <span className="candidate-market-value">{marketCap === undefined ? 'Unknown' : formatUsd(marketCap)}</span>
-                    {marketSnapshot && (
-                      <span className="candidate-market-source">
-                        {formatMarketSnapshotTime(marketSnapshot.asOfTimestamp)}
-                      </span>
-                    )}
                   </td>
                   <td className="candidate-capture-col">
                     <div className="candidate-capture-cell">
                       <span className="mechanism-pill">{DESTINATION_LABELS[candidate.buybackDestination]}</span>
-                      <span className={cx('candidate-program-status', candidate.programStatus)}>{STATUS_LABELS[candidate.programStatus]}</span>
+                      {candidate.programStatus !== 'active' && (
+                        <span className={cx('candidate-program-status', candidate.programStatus)}>{STATUS_LABELS[candidate.programStatus]}</span>
+                      )}
                       <ValueCaptureInfo candidate={candidate} />
                     </div>
                   </td>
                   <td className="numeric mono-value"><span className="pending-value">Pending</span></td>
                   <td className="numeric mono-value">{pressure === null || pressure === undefined ? <span className="pending-value">Pending</span> : formatUsd(pressure)}</td>
                   <td className="numeric mono-value"><span className="pending-value">Pending</span></td>
-                  <td className="candidate-evidence-col"><span className={cx('evidence-pill', evidenceTone(candidate.evidenceLevel))}>{EVIDENCE_LABELS[candidate.evidenceLevel]}</span></td>
-                  <td className="candidate-updated-col mono-value">{snapshot?.asOfDate ?? candidate.verifiedOn}</td>
                   <td className="candidate-details-col">
                     <button
                       className="candidate-detail-toggle"
@@ -872,7 +855,7 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
                 </tr>,
                 expanded && (
                   <tr className="candidate-detail-row" id={`candidate-detail-${candidate.id}`} key={`${candidate.id}-detail`}>
-                    <td colSpan={10}>
+                    <td colSpan={8}>
                       <div className="candidate-detail-shell">
                         <div className="candidate-detail-heading">
                           <span className="mechanism-pill">{candidate.mechanismLabel}</span>
@@ -885,7 +868,7 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
                           {marketSnapshot && (
                             <div>
                               <dt>Market snapshot</dt>
-                              <dd>{formatUsd(marketCap, false)} · CoinMarketCap · {marketSnapshot.asOfTimestamp}</dd>
+                              <dd>{formatUsd(marketCap, false)} · CoinMarketCap · {formatMarketSnapshotTime(marketSnapshot.asOfTimestamp)}</dd>
                             </div>
                           )}
                           {snapshot && <div><dt>Dated snapshot</dt><dd>{snapshot.summary}</dd></div>}
