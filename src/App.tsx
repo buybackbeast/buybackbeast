@@ -33,6 +33,12 @@ import {
   type ResearchCandidate,
 } from './data/researchCandidates'
 import {
+  calculateCandidateMetrics,
+  getCandidateMetricSnapshot,
+  rankCandidateMetricRows,
+  type CandidateMetricQuality,
+} from './data/candidateMetrics'
+import {
   COIN_MARKET_CAP_SNAPSHOT_TIMESTAMP,
   COIN_MARKET_CAP_SNAPSHOTS,
   loadLatestCoinMarketCapSnapshots,
@@ -226,6 +232,24 @@ function formatPct(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return 'NR'
   const sign = value > 0 ? '+' : ''
   return `${sign}${value.toFixed(2)}%`
+}
+
+function formatResearchMetric(
+  value: number | null | undefined,
+  quality: CandidateMetricQuality,
+  kind: 'usd' | 'pct',
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return 'N/A'
+  const prefix = quality === 'estimate' ? '~' : ''
+  return `${prefix}${kind === 'usd' ? formatUsd(value) : formatPct(value)}`
+}
+
+function sourceHost(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return 'research source'
+  }
 }
 
 function formatMarketSnapshotTime(timestamp: string): string {
@@ -637,22 +661,6 @@ interface ResearchCandidatesProps {
   onReleaseHorizonChange: (days: ReleaseHorizonDays) => void
 }
 
-function getCandidateSnapshotPressure(candidateId: string, horizon: ReleaseHorizonDays): number | null {
-  const snapshot = getSourcedCandidateSnapshot(candidateId)
-  if (!snapshot) return null
-  const data = snapshot.releaseData
-  const values = horizon === 7
-    ? [data.unlockUsd7d, data.inflationaryEmissionsUsd7d]
-    : horizon === 30
-      ? [data.unlockUsd30d, data.inflationaryEmissionsUsd30d]
-      : horizon === 90
-        ? [data.unlockUsd90d, data.inflationaryEmissionsUsd90d]
-        : horizon === 180
-          ? [data.unlockUsd180d, data.inflationaryEmissionsUsd180d]
-          : [data.unlockUsd365d, data.inflationaryEmissionsUsd365d]
-  return values.some((value) => value === null) ? null : values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
-}
-
 function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonChange }: ResearchCandidatesProps) {
   const [query, setQuery] = useState('')
   const [destination, setDestination] = useState<'all' | BuybackDestination>('all')
@@ -731,9 +739,29 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
   const latestSnapshotLabel = latestMarketTimestamp
     ? formatMarketSnapshotTime(latestMarketTimestamp)
     : 'Unavailable'
+  const rankedCandidateRows = useMemo(() => {
+    const rows = candidates.map((candidate) => {
+      const marketSnapshot = marketSnapshotsByCandidate.get(candidate.id)
+      const metricSnapshot = getCandidateMetricSnapshot(candidate.id)
+      const marketCap = marketSnapshot?.circulatingMarketCapUsd
+      const metrics = metricSnapshot && marketCap !== undefined
+        ? calculateCandidateMetrics(metricSnapshot, releaseHorizonDays, marketCap)
+        : undefined
+      return {
+        candidateId: candidate.id,
+        netPct: metrics?.netPct,
+        candidate,
+        marketSnapshot,
+        metricSnapshot,
+        metrics,
+      }
+    })
+    return rankCandidateMetricRows(rows)
+  }, [candidates, marketSnapshotsByCandidate, releaseHorizonDays])
+
   const visibleCandidates = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
-    return candidates.filter((candidate) => {
+    return rankedCandidateRows.filter(({ candidate }) => {
       const matchesQuery = !normalizedQuery
         || candidate.name.toLowerCase().includes(normalizedQuery)
         || candidate.symbol.toLowerCase().includes(normalizedQuery)
@@ -741,7 +769,7 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
       const matchesDestination = destination === 'all' || candidate.buybackDestination === destination
       return matchesQuery && matchesDestination
     })
-  }, [candidates, destination, query])
+  }, [destination, query, rankedCandidateRows])
 
   return (
     <section className="research-candidates" aria-labelledby="research-candidates-title">
@@ -804,6 +832,12 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
         </select>
       </div>
 
+      <div className="candidate-metric-guide">
+        <span>Buyback normalizes recurring purchases or economic burns to the selected period.</span>
+        <span>Unlock includes scheduled releases and new issuance.</span>
+        <span><strong>~</strong> estimate · Net is relative to market cap.</span>
+      </div>
+
       <div className="candidate-table-scroll">
         <table className="candidate-table">
           <caption className="sr-only">Tracked tokens with recurring value-capture mechanisms</caption>
@@ -820,11 +854,9 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
             </tr>
           </thead>
           <tbody>
-            {visibleCandidates.map((candidate) => {
+            {visibleCandidates.map(({ candidate, marketSnapshot, metricSnapshot, metrics, rank }) => {
               const snapshot = getSourcedCandidateSnapshot(candidate.id)
-              const marketSnapshot = marketSnapshotsByCandidate.get(candidate.id)
               const marketCap = marketSnapshot?.circulatingMarketCapUsd
-              const pressure = getCandidateSnapshotPressure(candidate.id, releaseHorizonDays)
               const expanded = expandedId === candidate.id
               const marketSources = marketSnapshot
                 ? [{
@@ -832,12 +864,22 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
                     url: marketSnapshot.sourceUrl,
                   }]
                 : []
-              const sources = [...marketSources, ...candidate.sources, ...(snapshot?.sources ?? [])]
+              const metricSources = (metricSnapshot?.sourceUrls ?? []).map((url) => ({
+                label: `Metric data · ${sourceHost(url)}`,
+                url,
+              }))
+              const sources = [...marketSources, ...candidate.sources, ...(snapshot?.sources ?? []), ...metricSources]
                 .filter((source, index, all) => all.findIndex((item) => item.url === source.url) === index)
+              const buybackLabel = formatResearchMetric(metrics?.buybackUsd, metrics?.buybackQuality ?? 'unavailable', 'usd')
+              const unlockLabel = formatResearchMetric(metrics?.unlockUsd, metrics?.unlockQuality ?? 'unavailable', 'usd')
+              const netLabel = formatResearchMetric(metrics?.netPct, metrics?.netQuality ?? 'unavailable', 'pct')
+              const netTone = metrics?.netPct === null || metrics?.netPct === undefined
+                ? 'unavailable'
+                : metrics.netPct >= 0 ? 'positive' : 'negative'
 
               return [
                 <tr className={cx('candidate-summary-row', expanded && 'expanded')} key={candidate.id}>
-                  <td className="candidate-rank-col"><span className="rank-badge">–</span></td>
+                  <td className="candidate-rank-col"><span className={cx('rank-badge', rank !== null && rank <= 3 && 'top-three')}>{rank ?? '–'}</span></td>
                   <td className="candidate-token-col">
                     <div className="token-cell">
                       <TokenLogo id={candidate.id} name={candidate.name} symbol={candidate.symbol} />
@@ -856,9 +898,15 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
                       <ValueCaptureInfo candidate={candidate} />
                     </div>
                   </td>
-                  <td className="numeric mono-value"><span className="pending-value">Pending</span></td>
-                  <td className="numeric mono-value">{pressure === null || pressure === undefined ? <span className="pending-value">Pending</span> : formatUsd(pressure)}</td>
-                  <td className="numeric mono-value"><span className="pending-value">Pending</span></td>
+                  <td className="numeric mono-value">
+                    <span className={cx('candidate-metric-value', metrics?.buybackQuality === 'estimate' && 'estimated')} title={metricSnapshot?.buyback.note}>{buybackLabel}</span>
+                  </td>
+                  <td className="numeric mono-value">
+                    <span className={cx('candidate-metric-value', metrics?.unlockQuality === 'estimate' && 'estimated')} title={metricSnapshot?.releaseUsd[releaseHorizonDays].note}>{unlockLabel}</span>
+                  </td>
+                  <td className="numeric mono-value">
+                    <span className={cx('candidate-net-value', netTone, metrics?.netQuality === 'estimate' && 'estimated')} title="(Buyback - Unlock) divided by circulating market cap">{netLabel}</span>
+                  </td>
                   <td className="candidate-details-col">
                     <button
                       className="candidate-detail-toggle"
@@ -881,6 +929,22 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
                           <p>{candidate.mechanismSummary}</p>
                         </div>
                         <dl className="candidate-detail-grid">
+                          {metricSnapshot && metrics && (
+                            <>
+                              <div>
+                                <dt>{releaseHorizonDays}d buyback basis</dt>
+                                <dd>{metricSnapshot.buyback.note} Observed {metricSnapshot.buyback.periodStart ?? 'date unavailable'} to {metricSnapshot.buyback.periodEnd ?? 'date unavailable'}.</dd>
+                              </div>
+                              <div>
+                                <dt>{releaseHorizonDays}d unlock basis</dt>
+                                <dd>{metricSnapshot.releaseUsd[releaseHorizonDays].note}</dd>
+                              </div>
+                              <div>
+                                <dt>Net vs market cap</dt>
+                                <dd>{buybackLabel} minus {unlockLabel} equals {formatUsd(metrics.netUsd)}. That is {netLabel} of the current CMC market cap.</dd>
+                              </div>
+                            </>
+                          )}
                           <div><dt>Recurring evidence</dt><dd>{candidate.recurringEvidence}</dd></div>
                           <div><dt>Excluded from score</dt><dd>{candidate.excludedOneOff}</dd></div>
                           <div><dt>Release caveat</dt><dd>{candidate.releaseCaveat}</dd></div>
