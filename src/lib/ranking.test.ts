@@ -19,6 +19,10 @@ const token = (
   boughtAndBurnedUsdInPeriod: buybacks,
   announcedBuybacksUsd: 0,
   oneOffBurnsUsd: 0,
+  unlockUsd7d: unlocks === null ? null : unlocks / 20,
+  inflationaryEmissionsUsd7d: 0,
+  unlockUsd30d: unlocks === null ? null : unlocks / 10,
+  inflationaryEmissionsUsd30d: 0,
   unlockUsd90d: unlocks === null ? null : unlocks / 4,
   inflationaryEmissionsUsd90d: 0,
   unlockUsd180d: unlocks === null ? null : unlocks / 2,
@@ -50,11 +54,14 @@ describe('rankTokens', () => {
   it('can change rank when the user explicitly selects a shorter release horizon', () => {
     const frontLoaded = {
       ...token('FRONT', 300, 400),
+      unlockUsd30d: 300,
       unlockUsd90d: 350,
       unlockUsd180d: 360,
     }
     const backLoaded = {
       ...token('BACK', 200, 500),
+      unlockUsd7d: 1,
+      unlockUsd30d: 5,
       unlockUsd90d: 20,
     }
 
@@ -63,7 +70,7 @@ describe('rankTokens', () => {
       'BACK',
     ])
     expect(
-      rankTokens([frontLoaded, backLoaded], {}, 90).map((row) => row.input.symbol),
+      rankTokens([frontLoaded, backLoaded], {}, 30).map((row) => row.input.symbol),
     ).toEqual(['BACK', 'FRONT'])
   })
 })
