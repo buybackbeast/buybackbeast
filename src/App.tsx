@@ -26,6 +26,7 @@ import {
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import {
   RESEARCH_CANDIDATES,
@@ -421,6 +422,141 @@ function TokenLogo({ id, name, symbol }: TokenLogoProps) {
   )
 }
 
+interface TooltipPosition {
+  left: number
+  top: number
+  width: number
+  arrowLeft: number
+  placement: 'above' | 'below'
+}
+
+function getTooltipPosition(rect: DOMRect): TooltipPosition {
+  const viewportWidth = document.documentElement.clientWidth
+  const margin = 12
+  const width = Math.min(360, viewportWidth - margin * 2)
+  const triggerCenter = rect.left + rect.width / 2
+  const left = Math.min(
+    Math.max(margin, triggerCenter - width / 2),
+    viewportWidth - width - margin,
+  )
+  const placement = rect.top >= 170 ? 'above' : 'below'
+
+  return {
+    left,
+    top: placement === 'above' ? rect.top - 10 : rect.bottom + 10,
+    width,
+    arrowLeft: Math.min(width - 18, Math.max(18, triggerCenter - left)),
+    placement,
+  }
+}
+
+interface ValueCaptureInfoProps {
+  candidate: ResearchCandidate
+}
+
+function ValueCaptureInfo({ candidate }: ValueCaptureInfoProps) {
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const hoveringRef = useRef(false)
+  const pointerTypeRef = useRef<string | null>(null)
+  const [open, setOpen] = useState(false)
+  const [position, setPosition] = useState<TooltipPosition | null>(null)
+  const tooltipId = `${candidate.id}-capture-tooltip`
+
+  const showTooltip = () => {
+    const trigger = triggerRef.current
+    if (!trigger) return
+    setPosition(getTooltipPosition(trigger.getBoundingClientRect()))
+    setOpen(true)
+  }
+
+  useEffect(() => {
+    if (!open) return
+
+    const closeTooltip = () => setOpen(false)
+    const handleOutsidePointer = (event: PointerEvent) => {
+      if (!triggerRef.current?.contains(event.target as Node)) closeTooltip()
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      closeTooltip()
+      triggerRef.current?.focus()
+    }
+    const handleResize = () => {
+      const trigger = triggerRef.current
+      if (trigger) setPosition(getTooltipPosition(trigger.getBoundingClientRect()))
+    }
+
+    document.addEventListener('pointerdown', handleOutsidePointer)
+    document.addEventListener('scroll', closeTooltip, true)
+    document.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      document.removeEventListener('pointerdown', handleOutsidePointer)
+      document.removeEventListener('scroll', closeTooltip, true)
+      document.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [open])
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        className="capture-info-trigger"
+        type="button"
+        aria-label={`Explain ${candidate.symbol} value capture`}
+        aria-describedby={open ? tooltipId : undefined}
+        data-open={open}
+        onPointerDown={(event) => { pointerTypeRef.current = event.pointerType }}
+        onMouseEnter={() => {
+          hoveringRef.current = true
+          showTooltip()
+        }}
+        onMouseLeave={() => {
+          hoveringRef.current = false
+          if (document.activeElement !== triggerRef.current) setOpen(false)
+        }}
+        onFocus={() => {
+          if (pointerTypeRef.current !== 'touch' && pointerTypeRef.current !== 'pen') showTooltip()
+        }}
+        onBlur={() => {
+          pointerTypeRef.current = null
+          if (!hoveringRef.current) setOpen(false)
+        }}
+        onClick={() => {
+          if (pointerTypeRef.current === 'touch' || pointerTypeRef.current === 'pen') {
+            if (open) setOpen(false)
+            else showTooltip()
+            return
+          }
+          showTooltip()
+        }}
+      >
+        <Info size={13} strokeWidth={2.4} />
+      </button>
+      {open && position && createPortal(
+        <div
+          className={cx('capture-tooltip', position.placement)}
+          id={tooltipId}
+          role="tooltip"
+          style={{
+            left: position.left,
+            top: position.top,
+            width: position.width,
+            transform: position.placement === 'above' ? 'translateY(-100%)' : undefined,
+          }}
+        >
+          <div className="capture-tooltip-title">{candidate.mechanismLabel}</div>
+          <p>{candidate.mechanismTooltip}</p>
+          <span className="capture-tooltip-arrow" style={{ left: position.arrowLeft }} />
+        </div>,
+        document.body,
+      )}
+    </>
+  )
+}
+
 function evidenceTone(evidence: EvidenceLevel): string {
   if (evidence === 'onchain') return 'verified'
   if (evidence === 'official' || evidence === 'third_party') return 'documented'
@@ -548,7 +684,7 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
               <th scope="col" className="candidate-rank-col">#</th>
               <th scope="col" className="candidate-token-col">Token</th>
               <th scope="col" className="numeric candidate-market-col">Market cap</th>
-              <th scope="col">Value capture</th>
+              <th scope="col" className="candidate-capture-col">Value capture</th>
               <th scope="col" className="numeric">{releaseHorizonDays}d capture</th>
               <th scope="col" className="numeric">{releaseHorizonDays}d pressure</th>
               <th scope="col" className="numeric">Net yield</th>
@@ -577,10 +713,11 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
                     </div>
                   </td>
                   <td className="numeric mono-value candidate-market-col">{marketCap === undefined ? 'Unknown' : formatUsd(marketCap)}</td>
-                  <td className="candidate-details-col">
+                  <td className="candidate-capture-col">
                     <div className="candidate-capture-cell">
                       <span className="mechanism-pill">{DESTINATION_LABELS[candidate.buybackDestination]}</span>
                       <span className={cx('candidate-program-status', candidate.programStatus)}>{STATUS_LABELS[candidate.programStatus]}</span>
+                      <ValueCaptureInfo candidate={candidate} />
                     </div>
                   </td>
                   <td className="numeric mono-value"><span className="pending-value">Pending</span></td>
@@ -588,7 +725,7 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
                   <td className="numeric mono-value"><span className="pending-value">Pending</span></td>
                   <td className="candidate-evidence-col"><span className={cx('evidence-pill', evidenceTone(candidate.evidenceLevel))}>{EVIDENCE_LABELS[candidate.evidenceLevel]}</span></td>
                   <td className="candidate-updated-col mono-value">{snapshot?.asOfDate ?? candidate.verifiedOn}</td>
-                  <td>
+                  <td className="candidate-details-col">
                     <button
                       className="candidate-detail-toggle"
                       type="button"
