@@ -78,6 +78,8 @@ An executed buyback does not always remove supply permanently. VALUEBEAST theref
 
 The bundled ranking dataset is fictional and exists only to demonstrate the calculations. Research candidates and their dated source snapshots remain separate from ranking rows. A candidate enters the ranking only after a user completes and saves the remaining inputs.
 
+The source-linked candidate universe currently covers UNI, HYPE, PUMP, CAKE, INJ, LIT, ASTER, SKY, PENDLE, BANANA, BIFI, DYDX, GMX, JUP, RAY, LINK, SYRUP, and COW. CeFi exchange tokens and previously rejected FORM, AAVE, and GNS leads are not included. Treasury-held or recycled purchases remain visible for research but receive a zero destination factor by default.
+
 ## Run locally
 
 Requirements: Node.js 22 or newer.

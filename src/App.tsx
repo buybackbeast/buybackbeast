@@ -585,10 +585,10 @@ function ResearchCandidates({ candidates, ranked, onPrefill, onEdit }: ResearchC
     <section className="research-candidates" aria-labelledby="research-candidates-title">
       <div className="research-candidates-header">
         <div>
-          <div className="research-kicker">Mechanism-qualified · sourced snapshots</div>
+          <div className="research-kicker">Mechanism-qualified · source-linked</div>
           <h2 id="research-candidates-title">Research candidates</h2>
         </div>
-        <p>Dated source snapshots can prefill known inputs. Candidates never affect rankings until every remaining field is reviewed and saved.</p>
+        <p>{candidates.length} source-linked mechanisms are tracked. Candidates never affect rankings until every numeric input is reviewed and saved.</p>
       </div>
 
       <ul className="research-candidate-list">
@@ -610,7 +610,9 @@ function ResearchCandidates({ candidates, ranked, onPrefill, onEdit }: ResearchC
                   </div>
                 </div>
                 <div className="research-candidate-meta">
-                  <span className="evidence-pill documented">Official · checked {candidate.verifiedOn}</span>
+                  <span className={cx('evidence-pill', evidenceTone(candidate.evidenceLevel))}>
+                    {EVIDENCE_LABELS[candidate.evidenceLevel]} · checked {candidate.verifiedOn}
+                  </span>
                   <span className="mechanism-pill">{candidate.mechanismLabel}</span>
                   <span className={cx('candidate-program-status', candidate.programStatus)}>{STATUS_LABELS[candidate.programStatus]}</span>
                   <span className="candidate-status">{datasetStatus}</span>
@@ -763,7 +765,7 @@ function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays,
               <Info size={16} />
               <div>
                 <strong>{candidate.symbol} research draft</strong>
-                <span>{candidateSnapshot ? `A sourced ${candidateSnapshot.asOfDate} market and release snapshot was prefilled. ` : 'Identity and mechanism metadata were prefilled. '}Evidence defaults to Estimate until the complete numeric record is reviewed. {candidate.editorGuidance} Fill the executed capture amount and observation window, then review the date and sources before saving. Blank releases mean unknown, not zero.</span>
+                <span>{candidateSnapshot ? `A sourced ${candidateSnapshot.asOfDate} market and release snapshot was prefilled. ` : 'Identity, mechanism sources, and the mechanism check date were prefilled. Add sources for every numeric input. '}Evidence defaults to Estimate until the complete numeric record is reviewed. {candidate.editorGuidance} Fill the executed capture amount and observation window, then review the date and sources before saving. Blank releases mean unknown, not zero.</span>
                 <div className="candidate-prefill-sources">
                   {candidate.sources.map((source) => (
                     <a href={source.url} key={source.url} target="_blank" rel="noreferrer" aria-label={`${source.label}, opens in a new tab`}>{source.label}<ExternalLink size={11} /></a>
@@ -804,15 +806,15 @@ function TokenDrawer({ token, editingId, candidate, factors, releaseHorizonDays,
               </div>
               <div className="field">
                 <label htmlFor="buybacks">Executed buybacks in period</label>
-                <input id="buybacks" className="input" type="number" min="0" required value={draft.executedBuybacksUsdInPeriod} onChange={(event) => setNumber('executedBuybacksUsdInPeriod', event.target.value)} />
+                <input id="buybacks" className="input" type="number" min="0" required value={candidate?.accounting.recurringCaptureField === 'executedBuybacksUsdInPeriod' && draft.executedBuybacksUsdInPeriod === 0 ? '' : draft.executedBuybacksUsdInPeriod} onChange={(event) => setNumber('executedBuybacksUsdInPeriod', event.target.value)} />
               </div>
               <div className="field">
                 <label htmlFor="direct-burns">Recurring direct burns in period</label>
-                <input id="direct-burns" className="input" type="number" min="0" required value={candidate && draft.recurringDirectBurnsUsdInPeriod === 0 ? '' : draft.recurringDirectBurnsUsdInPeriod} onChange={(event) => setNumber('recurringDirectBurnsUsdInPeriod', event.target.value)} />
+                <input id="direct-burns" className="input" type="number" min="0" required value={candidate?.accounting.recurringCaptureField === 'recurringDirectBurnsUsdInPeriod' && draft.recurringDirectBurnsUsdInPeriod === 0 ? '' : draft.recurringDirectBurnsUsdInPeriod} onChange={(event) => setNumber('recurringDirectBurnsUsdInPeriod', event.target.value)} />
               </div>
               <div className="field">
                 <label htmlFor="distributions">Holder distributions in period</label>
-                <input id="distributions" className="input" type="number" min="0" required value={draft.holderDistributionsUsdInPeriod} onChange={(event) => setNumber('holderDistributionsUsdInPeriod', event.target.value)} />
+                <input id="distributions" className="input" type="number" min="0" required value={candidate?.accounting.recurringCaptureField === 'holderDistributionsUsdInPeriod' && draft.holderDistributionsUsdInPeriod === 0 ? '' : draft.holderDistributionsUsdInPeriod} onChange={(event) => setNumber('holderDistributionsUsdInPeriod', event.target.value)} />
               </div>
               <div className="field">
                 <label htmlFor="destination">Buyback destination</label>
