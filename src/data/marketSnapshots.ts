@@ -8,6 +8,19 @@ export interface CoinMarketCapSnapshot {
   sourceUrl: string
 }
 
+interface RemoteMarketCapSnapshot {
+  candidateId: string
+  coinMarketCapId: number
+  circulatingMarketCapUsd: number
+}
+
+interface RemoteMarketCapPayload {
+  schemaVersion: 1
+  provider: 'coinmarketcap'
+  asOfTimestamp: string
+  snapshots: RemoteMarketCapSnapshot[]
+}
+
 export const COIN_MARKET_CAP_SNAPSHOT_TIMESTAMP = '2026-09-30T18:59:00Z'
 
 /**
@@ -181,4 +194,75 @@ export const COIN_MARKET_CAP_SNAPSHOTS = [
 
 export function getCoinMarketCapSnapshot(candidateId: string): CoinMarketCapSnapshot | undefined {
   return COIN_MARKET_CAP_SNAPSHOTS.find((snapshot) => snapshot.candidateId === candidateId)
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isIsoUtcTimestamp(value: unknown): value is string {
+  if (typeof value !== 'string'
+    || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value)) {
+    return false
+  }
+  const timestamp = Date.parse(value)
+  if (!Number.isFinite(timestamp)) return false
+  const normalized = value.includes('.') ? value : value.replace('Z', '.000Z')
+  return new Date(timestamp).toISOString() === normalized
+}
+
+export function parseCoinMarketCapPayload(value: unknown): CoinMarketCapSnapshot[] {
+  if (!isRecord(value)
+    || value.schemaVersion !== 1
+    || value.provider !== 'coinmarketcap'
+    || !isIsoUtcTimestamp(value.asOfTimestamp)
+    || !Array.isArray(value.snapshots)) {
+    throw new Error('Invalid CoinMarketCap payload')
+  }
+
+  const payload = value as unknown as RemoteMarketCapPayload
+  const staticByCandidate = new Map<string, CoinMarketCapSnapshot>(
+    COIN_MARKET_CAP_SNAPSHOTS.map((snapshot) => [snapshot.candidateId, snapshot]),
+  )
+  const updates = new Map<string, RemoteMarketCapSnapshot>()
+
+  for (const snapshot of payload.snapshots) {
+    if (!isRecord(snapshot)
+      || typeof snapshot.candidateId !== 'string'
+      || !Number.isInteger(snapshot.coinMarketCapId)
+      || typeof snapshot.circulatingMarketCapUsd !== 'number'
+      || !Number.isFinite(snapshot.circulatingMarketCapUsd)
+      || snapshot.circulatingMarketCapUsd <= 0) {
+      throw new Error('Invalid CoinMarketCap snapshot')
+    }
+
+    const staticSnapshot = staticByCandidate.get(snapshot.candidateId)
+    if (!staticSnapshot || staticSnapshot.coinMarketCapId !== snapshot.coinMarketCapId) {
+      throw new Error(`Unexpected CoinMarketCap asset: ${snapshot.candidateId}`)
+    }
+    if (updates.has(snapshot.candidateId)) {
+      throw new Error(`Duplicate CoinMarketCap asset: ${snapshot.candidateId}`)
+    }
+    updates.set(snapshot.candidateId, snapshot as RemoteMarketCapSnapshot)
+  }
+
+  if (updates.size !== COIN_MARKET_CAP_SNAPSHOTS.length) {
+    throw new Error('CoinMarketCap payload does not cover every candidate')
+  }
+
+  return COIN_MARKET_CAP_SNAPSHOTS.map((snapshot) => ({
+    ...snapshot,
+    circulatingMarketCapUsd: updates.get(snapshot.candidateId)!.circulatingMarketCapUsd,
+    asOfTimestamp: payload.asOfTimestamp,
+  }))
+}
+
+export async function loadLatestCoinMarketCapSnapshots(
+  signal?: AbortSignal,
+): Promise<CoinMarketCapSnapshot[]> {
+  const cacheBucket = Math.floor(Date.now() / (5 * 60 * 1000))
+  const url = `${import.meta.env.BASE_URL}data/market-caps.json?v=${cacheBucket}`
+  const response = await fetch(url, { cache: 'no-store', signal })
+  if (!response.ok) throw new Error(`Unable to load CMC snapshots: HTTP ${response.status}`)
+  return parseCoinMarketCapPayload(await response.json())
 }

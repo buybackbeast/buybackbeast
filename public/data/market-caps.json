@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "provider": "coinmarketcap",
+  "asOfTimestamp": "2026-09-30T18:59:00Z",
+  "snapshots": [
+    { "candidateId": "uniswap", "coinMarketCapId": 7083, "circulatingMarketCapUsd": 5480112183 },
+    { "candidateId": "hyperliquid", "coinMarketCapId": 32196, "circulatingMarketCapUsd": 22439602562 },
+    { "candidateId": "pump-fun", "coinMarketCapId": 36507, "circulatingMarketCapUsd": 2715613594 },
+    { "candidateId": "pancakeswap", "coinMarketCapId": 7186, "circulatingMarketCapUsd": 864027941 },
+    { "candidateId": "injective", "coinMarketCapId": 7226, "circulatingMarketCapUsd": 734314623 },
+    { "candidateId": "lighter", "coinMarketCapId": 39125, "circulatingMarketCapUsd": 986618464 },
+    { "candidateId": "aster", "coinMarketCapId": 36341, "circulatingMarketCapUsd": 2032639834 },
+    { "candidateId": "sky", "coinMarketCapId": 33038, "circulatingMarketCapUsd": 1817181714 },
+    { "candidateId": "pendle", "coinMarketCapId": 9481, "circulatingMarketCapUsd": 408465245 },
+    { "candidateId": "banana-gun", "coinMarketCapId": 28066, "circulatingMarketCapUsd": 16186971 },
+    { "candidateId": "beefy", "coinMarketCapId": 7311, "circulatingMarketCapUsd": 5812702.72 },
+    { "candidateId": "dydx", "coinMarketCapId": 28324, "circulatingMarketCapUsd": 121378874.49 },
+    { "candidateId": "gmx", "coinMarketCapId": 11857, "circulatingMarketCapUsd": 82159856.01 },
+    { "candidateId": "jupiter", "coinMarketCapId": 29210, "circulatingMarketCapUsd": 1082101572.5 },
+    { "candidateId": "raydium", "coinMarketCapId": 8526, "circulatingMarketCapUsd": 536006601.4 },
+    { "candidateId": "chainlink", "coinMarketCapId": 1975, "circulatingMarketCapUsd": 10708841727 },
+    { "candidateId": "maple-finance", "coinMarketCapId": 33824, "circulatingMarketCapUsd": 270935884 },
+    { "candidateId": "cow-protocol", "coinMarketCapId": 19269, "circulatingMarketCapUsd": 94518301 }
+  ]
+}
