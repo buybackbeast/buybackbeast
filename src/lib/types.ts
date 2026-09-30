@@ -26,7 +26,7 @@ export const PROGRAM_STATUSES = [
 
 export type ProgramStatus = (typeof PROGRAM_STATUSES)[number]
 
-export const RELEASE_HORIZONS = [90, 180, 365] as const
+export const RELEASE_HORIZONS = [7, 30, 90, 180, 365] as const
 
 export type ReleaseHorizonDays = (typeof RELEASE_HORIZONS)[number]
 
@@ -51,6 +51,14 @@ export interface TokenValueCaptureInput {
   announcedBuybacksUsd: number
   /** Non-recurring burns. Context only and excluded from the recurring run-rate. */
   oneOffBurnsUsd: number
+  /** Null means the cumulative forward unlock value is unknown for this horizon. */
+  unlockUsd7d: number | null
+  /** Null means cumulative forward inflationary emissions are unknown for this horizon. */
+  inflationaryEmissionsUsd7d: number | null
+  /** Null means the cumulative forward unlock value is unknown for this horizon. */
+  unlockUsd30d: number | null
+  /** Null means cumulative forward inflationary emissions are unknown for this horizon. */
+  inflationaryEmissionsUsd30d: number | null
   /** Null means the cumulative forward unlock value is unknown for this horizon. */
   unlockUsd90d: number | null
   /** Null means cumulative forward inflationary emissions are unknown for this horizon. */
