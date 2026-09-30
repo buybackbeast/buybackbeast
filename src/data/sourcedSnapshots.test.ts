@@ -12,19 +12,19 @@ describe('sourced candidate snapshots', () => {
     expect(new Set(candidateIds).size).toBe(candidateIds.length)
   })
 
-  it('keeps UNI market and release data together in the dated read-only snapshot', () => {
+  it('keeps UNI release data separate from market-cap snapshots', () => {
     const snapshot = getSourcedCandidateSnapshot('uniswap')
 
     expect(snapshot).toBeDefined()
-    expect(snapshot?.tokenPriceUsd).toBe(9.07)
-    expect(snapshot?.marketReleaseData).toMatchObject({
-      circulatingMarketCapUsd: 5_627_000_000,
-      fdvUsd: 9_070_000_000,
+    expect(snapshot?.valuationPriceUsd).toBe(9.07)
+    expect(snapshot?.releaseData).toMatchObject({
       dataDate: '2026-09-30',
     })
-    expect(snapshot?.marketReleaseData.unlockUsd90d).toBe(5_000_000 * 9.07)
-    expect(snapshot?.marketReleaseData.unlockUsd180d).toBe(10_000_000 * 9.07)
-    expect(snapshot?.marketReleaseData.unlockUsd365d).toBe(20_000_000 * 9.07)
+    expect(snapshot?.releaseData).not.toHaveProperty('circulatingMarketCapUsd')
+    expect(snapshot?.releaseData).not.toHaveProperty('fdvUsd')
+    expect(snapshot?.releaseData.unlockUsd90d).toBe(5_000_000 * 9.07)
+    expect(snapshot?.releaseData.unlockUsd180d).toBe(10_000_000 * 9.07)
+    expect(snapshot?.releaseData.unlockUsd365d).toBe(20_000_000 * 9.07)
     expect(snapshot?.sources.map((source) => source.url)).toEqual(expect.arrayContaining([
       'https://defillama.com/unlocks/uniswap',
       'https://dune.com/uniswaplabs/uni-burn-tracker-l1l2',
@@ -32,7 +32,7 @@ describe('sourced candidate snapshots', () => {
   })
 
   it('records verified inactive inflation separately from treasury releases', () => {
-    const emissions = getSourcedCandidateSnapshot('uniswap')?.marketReleaseData
+    const emissions = getSourcedCandidateSnapshot('uniswap')?.releaseData
 
     expect(emissions?.inflationaryEmissionsUsd90d).toBe(0)
     expect(emissions?.inflationaryEmissionsUsd180d).toBe(0)

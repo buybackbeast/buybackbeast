@@ -119,11 +119,13 @@ Evidence labels help readers judge input quality but do not alter the rank:
 
 ## Research candidates
 
-A research candidate is a mechanism-qualified lead, not a ranking observation. Candidate records and dated source snapshots are presented in a read-only research table. They do not enter local storage, exports, aggregate metrics, or `rankTokens()`.
+A research candidate is a mechanism-qualified lead, not a ranking observation. Candidate records, dated CoinMarketCap circulating-market-cap snapshots, and separately sourced release snapshots are presented in a read-only research table. They do not enter local storage, exports, aggregate metrics, or `rankTokens()`.
 
 The compact table is designed for comparison, while expandable details retain the mechanism explanation, caveats, measurement date, and sources. Unknown values are displayed as unavailable and must never be replaced with placeholder zeroes to manufacture a score.
 
-For Uniswap specifically, DefiLlama reported a $9.07 UNI price, $5.627 billion circulating market capitalization, 1 billion maximum supply, and 100% completion of the original allocation vesting on September 30, 2026. The displayed FDV snapshot is therefore a provider-convention proxy of $9.07 billion, not a hard-cap claim.
+The table uses CoinMarketCap as the single market-cap provider for all 18 candidates. Each record stores its CoinMarketCap ID, canonical slug, source page, and a shared timestamp of September 30, 2026 at 18:59 UTC. Market-cap snapshots remain separate from release schedules so a market-data refresh cannot silently change unlock calculations.
+
+For Uniswap specifically, CoinMarketCap reported a $5.480 billion circulating market capitalization at the shared snapshot time. DefiLlama marks 100% completion of the original allocation vesting. The separate $9.07 valuation price is retained only to reproduce the previously verified UNIVesting release amounts and is not used as the table's market-cap source.
 
 The separate UNIVesting contract releases UNI on calendar-quarter boundaries. At Ethereum block 26,091,194 on September 30, 2026, its quarterly amount was still 5 million UNI, its last-unlock boundary was July 1, and the treasury owner had 25 million UNI of allowance remaining. Using the half-open interval `(snapshot date, horizon end]`, the snapshot includes 5 million UNI over 90 days, 10 million over 180 days, and 20 million over 365 days. At $9.07, those values are $45.35 million, $90.70 million, and $181.40 million. The allowance can be revoked and the quarterly amount can be changed under the contract rules, so these are scheduled pressure rather than guaranteed sales. Current official UNI documentation reports no active inflation, so the snapshot records verified zero inflationary emissions separately from treasury releases.
 

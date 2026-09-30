@@ -68,7 +68,7 @@ An executed buyback does not always remove supply permanently. VALUEBEAST theref
 - Explicit protection against bought-and-burned double counting
 - Editable buyback destination factors
 - Evidence and mechanism filters
-- Source-linked, read-only research table with dated market and release snapshots
+- Source-linked, read-only research table with dated CoinMarketCap snapshots and separate release data
 - Token add and edit workflow with source URLs and measurement dates
 - CSV and JSON import and export
 - Local browser storage with no account, wallet, or API key
@@ -76,7 +76,7 @@ An executed buyback does not always remove supply permanently. VALUEBEAST theref
 - Responsive desktop and mobile interface
 - Unit-tested calculations and automated GitHub checks
 
-No fictional ranking data is bundled. Research candidates and their dated source snapshots are read-only and remain separate from editable ranking rows; users can add or import fully sourced observations for calculation.
+No fictional ranking data is bundled. The research table uses dated CoinMarketCap circulating-market-cap snapshots, while unlock and emissions data remain separately sourced. These records are read-only and remain separate from editable ranking rows; users can add or import fully sourced observations for calculation.
 
 The source-linked candidate universe currently covers UNI, HYPE, PUMP, CAKE, INJ, LIT, ASTER, SKY, PENDLE, BANANA, BIFI, DYDX, GMX, JUP, RAY, LINK, SYRUP, and COW. CeFi exchange tokens and previously rejected FORM, AAVE, and GNS leads are not included. Treasury-held or recycled purchases remain visible for research but receive a zero destination factor by default.
 
