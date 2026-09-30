@@ -108,6 +108,10 @@ const EMPTY_TOKEN: TokenValueCaptureInput = {
   boughtAndBurnedUsdInPeriod: 0,
   announcedBuybacksUsd: 0,
   oneOffBurnsUsd: 0,
+  unlockUsd7d: null,
+  inflationaryEmissionsUsd7d: null,
+  unlockUsd30d: null,
+  inflationaryEmissionsUsd30d: null,
   unlockUsd90d: null,
   inflationaryEmissionsUsd90d: null,
   unlockUsd180d: null,
@@ -156,6 +160,10 @@ const CSV_FIELDS: Array<keyof TokenValueCaptureInput> = [
   'boughtAndBurnedUsdInPeriod',
   'announcedBuybacksUsd',
   'oneOffBurnsUsd',
+  'unlockUsd7d',
+  'inflationaryEmissionsUsd7d',
+  'unlockUsd30d',
+  'inflationaryEmissionsUsd30d',
   'unlockUsd90d',
   'inflationaryEmissionsUsd90d',
   'unlockUsd180d',
@@ -179,6 +187,10 @@ const NUMERIC_FIELDS = new Set<keyof TokenValueCaptureInput>([
   'boughtAndBurnedUsdInPeriod',
   'announcedBuybacksUsd',
   'oneOffBurnsUsd',
+  'unlockUsd7d',
+  'inflationaryEmissionsUsd7d',
+  'unlockUsd30d',
+  'inflationaryEmissionsUsd30d',
   'unlockUsd90d',
   'inflationaryEmissionsUsd90d',
   'unlockUsd180d',
@@ -188,6 +200,10 @@ const NUMERIC_FIELDS = new Set<keyof TokenValueCaptureInput>([
 ])
 
 const NULLABLE_NUMERIC_FIELDS = new Set<keyof TokenValueCaptureInput>([
+  'unlockUsd7d',
+  'inflationaryEmissionsUsd7d',
+  'unlockUsd30d',
+  'inflationaryEmissionsUsd30d',
   'unlockUsd90d',
   'inflationaryEmissionsUsd90d',
   'unlockUsd180d',
@@ -625,11 +641,15 @@ function getCandidateSnapshotPressure(candidateId: string, horizon: ReleaseHoriz
   const snapshot = getSourcedCandidateSnapshot(candidateId)
   if (!snapshot) return null
   const data = snapshot.releaseData
-  const values = horizon === 90
-    ? [data.unlockUsd90d, data.inflationaryEmissionsUsd90d]
-    : horizon === 180
-      ? [data.unlockUsd180d, data.inflationaryEmissionsUsd180d]
-      : [data.unlockUsd365d, data.inflationaryEmissionsUsd365d]
+  const values = horizon === 7
+    ? [data.unlockUsd7d, data.inflationaryEmissionsUsd7d]
+    : horizon === 30
+      ? [data.unlockUsd30d, data.inflationaryEmissionsUsd30d]
+      : horizon === 90
+        ? [data.unlockUsd90d, data.inflationaryEmissionsUsd90d]
+        : horizon === 180
+          ? [data.unlockUsd180d, data.inflationaryEmissionsUsd180d]
+          : [data.unlockUsd365d, data.inflationaryEmissionsUsd365d]
   return values.some((value) => value === null) ? null : values.reduce<number>((sum, value) => sum + (value ?? 0), 0)
 }
 
@@ -752,7 +772,6 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
 
       <div className="candidate-toolbar">
         <div className="horizon-control" role="radiogroup" aria-label="Release window">
-          <span className="horizon-label">Window</span>
           <div className="horizon-options">
             {RELEASE_HORIZONS.map((days) => (
               <button
@@ -794,9 +813,9 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
               <th scope="col" className="candidate-token-col">Token</th>
               <th scope="col" className="numeric candidate-market-col">Market cap (CMC)</th>
               <th scope="col" className="candidate-capture-col">Method</th>
-              <th scope="col" className="numeric">Value returned</th>
-              <th scope="col" className="numeric">Tokens released</th>
-              <th scope="col" className="numeric">Net vs market cap</th>
+              <th scope="col" className="numeric">Buyback</th>
+              <th scope="col" className="numeric">Unlock</th>
+              <th scope="col" className="numeric">Net</th>
               <th scope="col" className="candidate-details-col" aria-label="Details" />
             </tr>
           </thead>
@@ -1051,6 +1070,24 @@ function TokenDrawer({ token, editingId, factors, releaseHorizonDays, onClose, o
               <div className="release-grid-heading">Horizon</div>
               <div className="release-grid-heading">Unlocks</div>
               <div className="release-grid-heading">Emissions</div>
+              <div className="release-horizon-label">7d</div>
+              <div className="field">
+                <label className="sr-only" htmlFor="unlocks-7">Next 7d unlock value</label>
+                <input id="unlocks-7" className="input" type="number" min="0" value={draft.unlockUsd7d ?? ''} onChange={(event) => setNullableNumber('unlockUsd7d', event.target.value)} placeholder="Unknown" />
+              </div>
+              <div className="field">
+                <label className="sr-only" htmlFor="emissions-7">Next 7d inflationary emissions</label>
+                <input id="emissions-7" className="input" type="number" min="0" value={draft.inflationaryEmissionsUsd7d ?? ''} onChange={(event) => setNullableNumber('inflationaryEmissionsUsd7d', event.target.value)} placeholder="Unknown" />
+              </div>
+              <div className="release-horizon-label">30d</div>
+              <div className="field">
+                <label className="sr-only" htmlFor="unlocks-30">Next 30d unlock value</label>
+                <input id="unlocks-30" className="input" type="number" min="0" value={draft.unlockUsd30d ?? ''} onChange={(event) => setNullableNumber('unlockUsd30d', event.target.value)} placeholder="Unknown" />
+              </div>
+              <div className="field">
+                <label className="sr-only" htmlFor="emissions-30">Next 30d inflationary emissions</label>
+                <input id="emissions-30" className="input" type="number" min="0" value={draft.inflationaryEmissionsUsd30d ?? ''} onChange={(event) => setNullableNumber('inflationaryEmissionsUsd30d', event.target.value)} placeholder="Unknown" />
+              </div>
               <div className="release-horizon-label">90d</div>
               <div className="field">
                 <label className="sr-only" htmlFor="unlocks-90">Next 90d unlock value</label>
