@@ -1,18 +1,18 @@
-# VALUEBEAST
+# BUYBACKBEAST
 
 An open-source research workspace for ranking crypto tokens by value returned to holders versus forward unlock pressure.
 
-[![verify](https://github.com/valuebeast/valuebeast/actions/workflows/verify.yml/badge.svg)](https://github.com/valuebeast/valuebeast/actions/workflows/verify.yml)
+[![verify](https://github.com/buybackbeast/buybackbeast/actions/workflows/verify.yml/badge.svg)](https://github.com/buybackbeast/buybackbeast/actions/workflows/verify.yml)
 
-[Open the live demo](https://valuebeast.github.io/valuebeast/) · [Read the methodology](docs/methodology.md) · [Contribute sourced data](https://github.com/valuebeast/valuebeast/issues/2)
+[Open the live demo](https://buybackbeast.github.io/buybackbeast/) · [Read the methodology](docs/methodology.md) · [Contribute sourced data](https://github.com/buybackbeast/buybackbeast/issues/2)
 
-VALUEBEAST puts executed buybacks, protocol-funded burns, holder distributions, and forward unlocks on one comparable USD basis. Researchers can inspect matched 90-day, 180-day, or 365-day windows. The default remains 365 days, and every input and adjustment is visible.
+BUYBACKBEAST puts executed buybacks, protocol-funded burns, holder distributions, and forward unlocks on one comparable USD basis. Researchers can inspect matched 90-day, 180-day, or 365-day windows. The default remains 365 days, and every input and adjustment is visible.
 
 ## Why this exists
 
 A large buyback headline says little on its own. The same program can be meaningful for a $300 million token and immaterial for a $30 billion token. It can also be overwhelmed by team and investor unlocks.
 
-VALUEBEAST answers four questions:
+BUYBACKBEAST answers four questions:
 
 1. How much value was actually captured over the last 12 months?
 2. What percentage of circulating market capitalization does that represent?
@@ -58,7 +58,7 @@ The default table ranks the 365-day window by net capture yield, then unlock cov
 
 ### Destination factors
 
-An executed buyback does not always remove supply permanently. VALUEBEAST therefore exposes adjustable destination factors. Bought-and-burned or irrevocably locked tokens count at 100% by default, while tokens held in a reusable treasury count at 0% until retired. The settings and resulting rank changes remain visible.
+An executed buyback does not always remove supply permanently. BUYBACKBEAST therefore exposes adjustable destination factors. Bought-and-burned or irrevocably locked tokens count at 100% by default, while tokens held in a reusable treasury count at 0% until retired. The settings and resulting rank changes remain visible.
 
 ## Features
 
@@ -103,7 +103,7 @@ npm run build
 
 ## Data rules
 
-VALUEBEAST follows a few strict rules to keep comparisons useful:
+BUYBACKBEAST follows a few strict rules to keep comparisons useful:
 
 - Use executed amounts for the trailing period. Keep budgets and promises separate.
 - Never count the same bought-and-burned tokens as both buybacks and direct burns.
@@ -130,7 +130,7 @@ See [the methodology](docs/methodology.md) for edge cases and a worked example.
 
 Calculation fixes and well-sourced data updates are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or pull request.
 
-If VALUEBEAST is useful for your research, star the repository so more crypto researchers can discover it.
+If BUYBACKBEAST is useful for your research, star the repository so more crypto researchers can discover it.
 
 ## License
 

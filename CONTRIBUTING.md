@@ -1,6 +1,6 @@
 # Contributing
 
-VALUEBEAST welcomes calculation fixes, data-source improvements, accessibility work, and focused product changes.
+BUYBACKBEAST welcomes calculation fixes, data-source improvements, accessibility work, and focused product changes.
 
 ## Before opening a pull request
 

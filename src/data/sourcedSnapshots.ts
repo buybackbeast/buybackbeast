@@ -101,7 +101,7 @@ export const SOURCED_CANDIDATE_SNAPSHOTS = [
       },
       {
         label: 'Pinned UNIVesting RPC evidence',
-        url: 'https://github.com/valuebeast/valuebeast/blob/main/docs/evidence/uniswap-univesting-2026-09-30.json',
+        url: 'https://github.com/buybackbeast/buybackbeast/blob/main/docs/evidence/uniswap-univesting-2026-09-30.json',
       },
     ],
   },
