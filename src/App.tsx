@@ -44,6 +44,7 @@ import {
   BUYBACK_DESTINATIONS,
   DEFAULT_ADJUSTMENT_FACTORS,
   EVIDENCE_LEVELS,
+  getHourlyRefreshTiming,
   PROGRAM_STATUSES,
   RELEASE_HORIZONS,
   calculateTokenMetrics,
@@ -641,6 +642,7 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
     COIN_MARKET_CAP_SNAPSHOTS,
   )
   const [marketDataState, setMarketDataState] = useState<'loading' | 'live' | 'fallback' | 'stale'>('loading')
+  const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now())
   const latestMarketTimestampRef = useRef(COIN_MARKET_CAP_SNAPSHOT_TIMESTAMP)
   const marketSnapshotsByCandidate = useMemo(
     () => new Map(marketSnapshots.map((snapshot) => [snapshot.candidateId, snapshot])),
@@ -682,14 +684,34 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
       window.clearInterval(intervalId)
     }
   }, [])
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setCurrentTimeMs(Date.now()), 30 * 1000)
+    return () => window.clearInterval(intervalId)
+  }, [])
+
   const latestMarketTimestamp = marketSnapshots[0]?.asOfTimestamp
-  const marketDataMessage = marketDataState === 'live' && latestMarketTimestamp
-    ? `CMC market caps refresh hourly. Latest snapshot: ${formatMarketSnapshotTime(latestMarketTimestamp).replace('CMC · ', '')}.`
-    : marketDataState === 'loading'
-      ? 'Loading the latest hourly CMC market-cap snapshot.'
-      : marketDataState === 'stale'
-        ? 'CMC refresh is retrying. Showing the last verified snapshot.'
-        : 'Live CMC update is unavailable. Showing the bundled verified snapshot.'
+  const refreshTiming = getHourlyRefreshTiming(currentTimeMs, latestMarketTimestamp ?? '')
+  const refreshVisualState = marketDataState === 'loading'
+    ? 'loading'
+    : marketDataState === 'fallback'
+      ? 'fallback'
+      : marketDataState === 'stale' || refreshTiming.kind === 'delayed'
+        ? 'delayed'
+        : refreshTiming.kind
+  const refreshLabel = refreshVisualState === 'countdown' ? 'Next refresh in' : 'Market data'
+  const refreshValue = refreshVisualState === 'countdown'
+    ? `${refreshTiming.kind === 'countdown' ? refreshTiming.minutes : 0} min`
+    : refreshVisualState === 'refreshing'
+      ? 'Refreshing now'
+      : refreshVisualState === 'loading'
+        ? 'Checking latest'
+        : refreshVisualState === 'delayed'
+          ? 'Update delayed'
+          : 'Live update unavailable'
+  const latestSnapshotLabel = latestMarketTimestamp
+    ? formatMarketSnapshotTime(latestMarketTimestamp).replace('CMC · ', '')
+    : 'Unavailable'
   const visibleCandidates = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
     return candidates.filter((candidate) => {
@@ -710,7 +732,24 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
           <div className="research-kicker">Source-linked · mechanism-qualified</div>
           <h2 id="research-candidates-title">Value-capture market</h2>
         </div>
-        <p>{candidates.length} assets tracked. {marketDataMessage}</p>
+        <div
+          className={`market-refresh-card ${refreshVisualState}`}
+          title="Expected hourly update. GitHub Actions timing may vary slightly."
+          aria-label={`${refreshLabel}: ${refreshValue}. ${candidates.length} assets tracked. Latest snapshot ${latestSnapshotLabel}.`}
+        >
+          <div className="market-refresh-primary">
+            <span className="market-refresh-dot" aria-hidden="true" />
+            <div>
+              <div className="market-refresh-label">{refreshLabel}</div>
+              <div className="market-refresh-value">{refreshValue}</div>
+            </div>
+          </div>
+          <div className="market-refresh-meta" aria-hidden="true">
+            <span>{candidates.length} assets tracked</span>
+            <span>·</span>
+            <span>Latest {latestSnapshotLabel}</span>
+          </div>
+        </div>
       </div>
 
       <div className="candidate-toolbar">
