@@ -1,6 +1,6 @@
 import type { TokenValueCaptureInput } from '../lib'
 
-type SnapshotPrefill = Pick<
+type MarketReleaseData = Pick<
   TokenValueCaptureInput,
   | 'circulatingMarketCapUsd'
   | 'fdvUsd'
@@ -18,7 +18,7 @@ export interface SourcedCandidateSnapshot {
   candidateId: string
   asOfDate: string
   tokenPriceUsd: number
-  prefill: SnapshotPrefill
+  marketReleaseData: MarketReleaseData
   summary: string
   methodology: string
   onchainVerification?: {
@@ -39,8 +39,8 @@ export interface SourcedCandidateSnapshot {
 const UNISWAP_PRICE_USD = 9.07
 
 /**
- * Dated, reviewable inputs are kept separate from mechanism qualification.
- * The snapshot can prefill an editor, but it never enters the ranking by itself.
+ * Dated, read-only market and release data is kept separate from mechanism
+ * qualification and never enters the ranking by itself.
  */
 export const SOURCED_CANDIDATE_SNAPSHOTS = [
   {
@@ -48,7 +48,7 @@ export const SOURCED_CANDIDATE_SNAPSHOTS = [
     candidateId: 'uniswap',
     asOfDate: '2026-09-30',
     tokenPriceUsd: UNISWAP_PRICE_USD,
-    prefill: {
+    marketReleaseData: {
       circulatingMarketCapUsd: 5_627_000_000,
       // Provider-convention proxy: $9.07 × DefiLlama's reported 1B max supply.
       fdvUsd: 9_070_000_000,
