@@ -26,6 +26,10 @@ export const PROGRAM_STATUSES = [
 
 export type ProgramStatus = (typeof PROGRAM_STATUSES)[number]
 
+export const RELEASE_HORIZONS = [90, 180, 365] as const
+
+export type ReleaseHorizonDays = (typeof RELEASE_HORIZONS)[number]
+
 /** All monetary values are USD values measured at the supplied data date. */
 export interface TokenValueCaptureInput {
   id?: string
@@ -47,6 +51,14 @@ export interface TokenValueCaptureInput {
   announcedBuybacksUsd: number
   /** Non-recurring burns. Context only and excluded from the recurring run-rate. */
   oneOffBurnsUsd: number
+  /** Null means the cumulative forward unlock value is unknown for this horizon. */
+  unlockUsd90d: number | null
+  /** Null means cumulative forward inflationary emissions are unknown for this horizon. */
+  inflationaryEmissionsUsd90d: number | null
+  /** Null means the cumulative forward unlock value is unknown for this horizon. */
+  unlockUsd180d: number | null
+  /** Null means cumulative forward inflationary emissions are unknown for this horizon. */
+  inflationaryEmissionsUsd180d: number | null
   /** Null means the forward unlock value is unknown. Numeric zero means verified zero. */
   unlockUsd365d: number | null
   /** Null means forward inflationary emissions are unknown. Zero means verified zero. */
@@ -71,6 +83,7 @@ export type AnnualizationStatus = 'actual_365d' | 'provisional_annualized'
 export type MetricFormulaKey =
   | 'annualizedGrossCaptureUsd'
   | 'annualizedEffectiveCaptureUsd'
+  | 'horizonEffectiveCaptureUsd'
   | 'grossCaptureYieldPct'
   | 'effectiveCaptureYieldPct'
   | 'unlockDilutionPct'
@@ -95,6 +108,8 @@ export type CalculationFormulaMap = Record<
 >
 
 export interface TokenMetrics {
+  releaseHorizonDays: ReleaseHorizonDays
+  horizonCaptureFactor: number
   capturePeriodGrossUsd: number
   annualizationFactor: number
   annualizationStatus: AnnualizationStatus
@@ -103,6 +118,8 @@ export interface TokenMetrics {
   annualizedHolderDistributionsUsd: number
   annualizedGrossCaptureUsd: number
   annualizedEffectiveCaptureUsd: number
+  horizonEffectiveCaptureUsd: number
+  horizonEffectiveCaptureYieldPct: number
   grossCaptureYieldPct: number
   effectiveCaptureYieldPct: number
   unlockDilutionPct: number | null

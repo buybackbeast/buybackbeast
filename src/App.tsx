@@ -31,8 +31,10 @@ import {
   DEFAULT_ADJUSTMENT_FACTORS,
   EVIDENCE_LEVELS,
   PROGRAM_STATUSES,
+  RELEASE_HORIZONS,
   calculateTokenMetrics,
   parseAdjustmentFactors,
+  parseReleaseHorizonDays,
   parseTokenInputs,
   rankTokens,
   type AdjustmentFactors,
@@ -40,6 +42,7 @@ import {
   type EvidenceLevel,
   type ProgramStatus,
   type RankedToken,
+  type ReleaseHorizonDays,
   type TokenMetrics,
   type TokenValueCaptureInput,
 } from './lib'
@@ -57,10 +60,19 @@ type SortKey =
 type SortDirection = 'asc' | 'desc'
 
 interface StoredState {
-  version: 1
+  version: 2
   datasetType: DatasetType
   tokens: TokenValueCaptureInput[]
   factors: AdjustmentFactors
+  releaseHorizonDays: ReleaseHorizonDays
+}
+
+interface StoredStateInput {
+  version?: unknown
+  datasetType?: unknown
+  tokens?: unknown
+  factors?: unknown
+  releaseHorizonDays?: unknown
 }
 
 interface SortState {
@@ -68,7 +80,8 @@ interface SortState {
   direction: SortDirection
 }
 
-const STORAGE_KEY = 'valuebeast:v1'
+const STORAGE_KEY = 'valuebeast:v2'
+const LEGACY_STORAGE_KEY = 'valuebeast:v1'
 
 const SAMPLE_TOKENS: TokenValueCaptureInput[] = [
   {
@@ -84,6 +97,10 @@ const SAMPLE_TOKENS: TokenValueCaptureInput[] = [
     boughtAndBurnedUsdInPeriod: 38_000_000,
     announcedBuybacksUsd: 18_000_000,
     oneOffBurnsUsd: 0,
+    unlockUsd90d: 1_500_000,
+    inflationaryEmissionsUsd90d: 1_500_000,
+    unlockUsd180d: 4_000_000,
+    inflationaryEmissionsUsd180d: 3_000_000,
     unlockUsd365d: 9_000_000,
     inflationaryEmissionsUsd365d: 6_000_000,
     buybackDestination: 'burn',
@@ -105,6 +122,10 @@ const SAMPLE_TOKENS: TokenValueCaptureInput[] = [
     boughtAndBurnedUsdInPeriod: 0,
     announcedBuybacksUsd: 40_000_000,
     oneOffBurnsUsd: 0,
+    unlockUsd90d: 8_000_000,
+    inflationaryEmissionsUsd90d: 4_000_000,
+    unlockUsd180d: 18_000_000,
+    inflationaryEmissionsUsd180d: 9_000_000,
     unlockUsd365d: 36_000_000,
     inflationaryEmissionsUsd365d: 18_000_000,
     buybackDestination: 'lock',
@@ -126,6 +147,10 @@ const SAMPLE_TOKENS: TokenValueCaptureInput[] = [
     boughtAndBurnedUsdInPeriod: 11_000_000,
     announcedBuybacksUsd: 30_000_000,
     oneOffBurnsUsd: 45_000_000,
+    unlockUsd90d: 30_000_000,
+    inflationaryEmissionsUsd90d: 6_000_000,
+    unlockUsd180d: 55_000_000,
+    inflationaryEmissionsUsd180d: 12_000_000,
     unlockUsd365d: 92_000_000,
     inflationaryEmissionsUsd365d: 24_000_000,
     buybackDestination: 'burn',
@@ -147,6 +172,10 @@ const SAMPLE_TOKENS: TokenValueCaptureInput[] = [
     boughtAndBurnedUsdInPeriod: 0,
     announcedBuybacksUsd: 0,
     oneOffBurnsUsd: 0,
+    unlockUsd90d: 3_000_000,
+    inflationaryEmissionsUsd90d: 800_000,
+    unlockUsd180d: 7_000_000,
+    inflationaryEmissionsUsd180d: 1_700_000,
     unlockUsd365d: 14_000_000,
     inflationaryEmissionsUsd365d: 3_500_000,
     buybackDestination: 'treasury',
@@ -168,6 +197,10 @@ const SAMPLE_TOKENS: TokenValueCaptureInput[] = [
     boughtAndBurnedUsdInPeriod: 0,
     announcedBuybacksUsd: 25_000_000,
     oneOffBurnsUsd: 0,
+    unlockUsd90d: 20_000_000,
+    inflationaryEmissionsUsd90d: 5_000_000,
+    unlockUsd180d: 35_000_000,
+    inflationaryEmissionsUsd180d: 10_000_000,
     unlockUsd365d: 58_000_000,
     inflationaryEmissionsUsd365d: 21_000_000,
     buybackDestination: 'recycled',
@@ -189,6 +222,10 @@ const SAMPLE_TOKENS: TokenValueCaptureInput[] = [
     boughtAndBurnedUsdInPeriod: 5_800_000,
     announcedBuybacksUsd: 12_000_000,
     oneOffBurnsUsd: 0,
+    unlockUsd90d: null,
+    inflationaryEmissionsUsd90d: null,
+    unlockUsd180d: null,
+    inflationaryEmissionsUsd180d: null,
     unlockUsd365d: null,
     inflationaryEmissionsUsd365d: null,
     buybackDestination: 'burn',
@@ -211,6 +248,10 @@ const EMPTY_TOKEN: TokenValueCaptureInput = {
   boughtAndBurnedUsdInPeriod: 0,
   announcedBuybacksUsd: 0,
   oneOffBurnsUsd: 0,
+  unlockUsd90d: null,
+  inflationaryEmissionsUsd90d: null,
+  unlockUsd180d: null,
+  inflationaryEmissionsUsd180d: null,
   unlockUsd365d: null,
   inflationaryEmissionsUsd365d: null,
   buybackDestination: 'burn',
@@ -255,6 +296,10 @@ const CSV_FIELDS: Array<keyof TokenValueCaptureInput> = [
   'boughtAndBurnedUsdInPeriod',
   'announcedBuybacksUsd',
   'oneOffBurnsUsd',
+  'unlockUsd90d',
+  'inflationaryEmissionsUsd90d',
+  'unlockUsd180d',
+  'inflationaryEmissionsUsd180d',
   'unlockUsd365d',
   'inflationaryEmissionsUsd365d',
   'buybackDestination',
@@ -274,6 +319,19 @@ const NUMERIC_FIELDS = new Set<keyof TokenValueCaptureInput>([
   'boughtAndBurnedUsdInPeriod',
   'announcedBuybacksUsd',
   'oneOffBurnsUsd',
+  'unlockUsd90d',
+  'inflationaryEmissionsUsd90d',
+  'unlockUsd180d',
+  'inflationaryEmissionsUsd180d',
+  'unlockUsd365d',
+  'inflationaryEmissionsUsd365d',
+])
+
+const NULLABLE_NUMERIC_FIELDS = new Set<keyof TokenValueCaptureInput>([
+  'unlockUsd90d',
+  'inflationaryEmissionsUsd90d',
+  'unlockUsd180d',
+  'inflationaryEmissionsUsd180d',
   'unlockUsd365d',
   'inflationaryEmissionsUsd365d',
 ])
@@ -379,7 +437,7 @@ function tokensFromCsv(text: string): TokenValueCaptureInput[] {
       if (key === 'sourceUrls') {
         record[key] = value.split('|').map((url) => url.trim()).filter(Boolean)
       } else if (NUMERIC_FIELDS.has(key)) {
-        record[key] = value === '' && (key === 'unlockUsd365d' || key === 'inflationaryEmissionsUsd365d')
+        record[key] = value === '' && NULLABLE_NUMERIC_FIELDS.has(key)
           ? null
           : Number(value)
       } else if (key !== 'id' || value !== '') {
@@ -398,41 +456,51 @@ function encodeShareState(state: StoredState): string {
   return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
 }
 
-function decodeShareState(value: string): StoredState {
+function decodeShareState(value: string): StoredStateInput {
   const padded = value.replaceAll('-', '+').replaceAll('_', '/') + '==='.slice((value.length + 3) % 4)
   const binary = atob(padded)
   const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0))
-  return JSON.parse(new TextDecoder().decode(bytes)) as StoredState
+  return JSON.parse(new TextDecoder().decode(bytes)) as StoredStateInput
+}
+
+function normalizeStoredState(input: StoredStateInput): StoredState {
+  let releaseHorizonDays: ReleaseHorizonDays = 365
+  if (input.releaseHorizonDays !== undefined) {
+    try {
+      releaseHorizonDays = parseReleaseHorizonDays(input.releaseHorizonDays)
+    } catch {
+      releaseHorizonDays = 365
+    }
+  }
+
+  return {
+    version: 2,
+    datasetType: input.datasetType === 'custom' ? 'custom' : 'illustrative',
+    tokens: parseTokenInputs(input.tokens),
+    factors: parseAdjustmentFactors(input.factors),
+    releaseHorizonDays,
+  }
 }
 
 function readInitialState(): StoredState {
   try {
     const hash = new URLSearchParams(window.location.hash.slice(1)).get('data')
     if (hash) {
-      const shared = decodeShareState(hash)
-      return {
-        ...shared,
-        tokens: parseTokenInputs(shared.tokens),
-        factors: parseAdjustmentFactors(shared.factors),
-      }
+      return normalizeStoredState(decodeShareState(hash))
     }
-    const stored = localStorage.getItem(STORAGE_KEY)
+    const stored = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY)
     if (stored) {
-      const parsed = JSON.parse(stored) as StoredState
-      return {
-        ...parsed,
-        tokens: parseTokenInputs(parsed.tokens),
-        factors: parseAdjustmentFactors(parsed.factors),
-      }
+      return normalizeStoredState(JSON.parse(stored) as StoredStateInput)
     }
   } catch {
     // Corrupt state falls back to the bundled illustrative dataset.
   }
   return {
-    version: 1,
+    version: 2,
     datasetType: 'illustrative',
     tokens: cloneSample(),
     factors: DEFAULT_ADJUSTMENT_FACTORS,
+    releaseHorizonDays: 365,
   }
 }
 
@@ -440,9 +508,9 @@ function getSortValue(row: RankedToken, key: SortKey): number | string {
   switch (key) {
     case 'rank': return row.rank ?? Number.POSITIVE_INFINITY
     case 'token': return row.input.symbol
-    case 'effectiveCapture': return row.metrics.annualizedEffectiveCaptureUsd
+    case 'effectiveCapture': return row.metrics.horizonEffectiveCaptureUsd
     case 'releasePressure': return row.metrics.totalReleasePressureUsd ?? Number.NEGATIVE_INFINITY
-    case 'grossYield': return row.metrics.effectiveCaptureYieldPct
+    case 'grossYield': return row.metrics.horizonEffectiveCaptureYieldPct
     case 'netYield': return row.metrics.netCaptureYieldPct ?? Number.NEGATIVE_INFINITY
     case 'coverage': return row.metrics.coverageRatio ?? (row.metrics.rankable ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY)
   }
@@ -501,11 +569,12 @@ interface TokenDrawerProps {
   token: TokenValueCaptureInput
   editingId: string | undefined
   factors: AdjustmentFactors
+  releaseHorizonDays: ReleaseHorizonDays
   onClose: () => void
   onSave: (token: TokenValueCaptureInput) => void
 }
 
-function TokenDrawer({ token, editingId, factors, onClose, onSave }: TokenDrawerProps) {
+function TokenDrawer({ token, editingId, factors, releaseHorizonDays, onClose, onSave }: TokenDrawerProps) {
   const [draft, setDraft] = useState<TokenValueCaptureInput>(() => ({ ...token, sourceUrls: [...token.sourceUrls] }))
   const [error, setError] = useState('')
   const [sources, setSources] = useState(token.sourceUrls.join('\n'))
@@ -515,17 +584,18 @@ function TokenDrawer({ token, editingId, factors, onClose, onSave }: TokenDrawer
       return calculateTokenMetrics(
         { ...draft, sourceUrls: sources.split('\n').map((url) => url.trim()).filter(Boolean) },
         { destination: factors.destination },
+        releaseHorizonDays,
       )
     } catch {
       return null
     }
-  }, [draft, factors, sources])
+  }, [draft, factors, releaseHorizonDays, sources])
 
   const setNumber = (key: keyof TokenValueCaptureInput, value: string) => {
     setDraft((current) => ({ ...current, [key]: Number(value) }))
   }
 
-  const setNullableNumber = (key: 'unlockUsd365d' | 'inflationaryEmissionsUsd365d', value: string) => {
+  const setNullableNumber = (key: keyof TokenValueCaptureInput, value: string) => {
     setDraft((current) => ({ ...current, [key]: value === '' ? null : Number(value) }))
   }
 
@@ -617,17 +687,41 @@ function TokenDrawer({ token, editingId, factors, onClose, onSave }: TokenDrawer
 
           <section className="drawer-section">
             <div className="section-title">Forward release pressure <span>Blank means unknown</span></div>
-            <div className="form-grid">
+            <p className="field-hint release-hint">Values are cumulative from the data date. Enter 0 only when zero has been verified.</p>
+            <div className="release-grid" role="group" aria-label="Cumulative release values by horizon">
+              <div className="release-grid-heading">Horizon</div>
+              <div className="release-grid-heading">Unlocks</div>
+              <div className="release-grid-heading">Emissions</div>
+              <div className="release-horizon-label">90d</div>
               <div className="field">
-                <label htmlFor="unlocks">Next 365d unlock value</label>
-                <input id="unlocks" className="input" type="number" min="0" value={draft.unlockUsd365d ?? ''} onChange={(event) => setNullableNumber('unlockUsd365d', event.target.value)} placeholder="Unknown" />
-                <p className="field-hint">Enter 0 only when zero has been verified.</p>
+                <label className="sr-only" htmlFor="unlocks-90">Next 90d unlock value</label>
+                <input id="unlocks-90" className="input" type="number" min="0" value={draft.unlockUsd90d ?? ''} onChange={(event) => setNullableNumber('unlockUsd90d', event.target.value)} placeholder="Unknown" />
               </div>
               <div className="field">
-                <label htmlFor="emissions">Next 365d inflationary emissions</label>
-                <input id="emissions" className="input" type="number" min="0" value={draft.inflationaryEmissionsUsd365d ?? ''} onChange={(event) => setNullableNumber('inflationaryEmissionsUsd365d', event.target.value)} placeholder="Unknown" />
-                <p className="field-hint">Unknown values make the token unranked.</p>
+                <label className="sr-only" htmlFor="emissions-90">Next 90d inflationary emissions</label>
+                <input id="emissions-90" className="input" type="number" min="0" value={draft.inflationaryEmissionsUsd90d ?? ''} onChange={(event) => setNullableNumber('inflationaryEmissionsUsd90d', event.target.value)} placeholder="Unknown" />
               </div>
+              <div className="release-horizon-label">180d</div>
+              <div className="field">
+                <label className="sr-only" htmlFor="unlocks-180">Next 180d unlock value</label>
+                <input id="unlocks-180" className="input" type="number" min="0" value={draft.unlockUsd180d ?? ''} onChange={(event) => setNullableNumber('unlockUsd180d', event.target.value)} placeholder="Unknown" />
+              </div>
+              <div className="field">
+                <label className="sr-only" htmlFor="emissions-180">Next 180d inflationary emissions</label>
+                <input id="emissions-180" className="input" type="number" min="0" value={draft.inflationaryEmissionsUsd180d ?? ''} onChange={(event) => setNullableNumber('inflationaryEmissionsUsd180d', event.target.value)} placeholder="Unknown" />
+              </div>
+              <div className="release-horizon-label">365d</div>
+              <div className="field">
+                <label className="sr-only" htmlFor="unlocks-365">Next 365d unlock value</label>
+                <input id="unlocks-365" className="input" type="number" min="0" value={draft.unlockUsd365d ?? ''} onChange={(event) => setNullableNumber('unlockUsd365d', event.target.value)} placeholder="Unknown" />
+              </div>
+              <div className="field">
+                <label className="sr-only" htmlFor="emissions-365">Next 365d inflationary emissions</label>
+                <input id="emissions-365" className="input" type="number" min="0" value={draft.inflationaryEmissionsUsd365d ?? ''} onChange={(event) => setNullableNumber('inflationaryEmissionsUsd365d', event.target.value)} placeholder="Unknown" />
+              </div>
+            </div>
+            <p className="field-hint">A token is ranked only when both values exist for the selected horizon.</p>
+            <div className="form-grid contextual-grid">
               <div className="field">
                 <label htmlFor="announced-buybacks">Announced buybacks</label>
                 <input id="announced-buybacks" className="input" type="number" min="0" required value={draft.announcedBuybacksUsd || ''} onChange={(event) => setNumber('announcedBuybacksUsd', event.target.value)} />
@@ -670,9 +764,9 @@ function TokenDrawer({ token, editingId, factors, onClose, onSave }: TokenDrawer
           <section className="drawer-section">
             <div className="section-title">Live preview <span>Current factors</span></div>
             <div className="preview-card">
-              <div className="preview-metric"><small>Effective capture</small><strong>{formatUsd(preview?.annualizedEffectiveCaptureUsd)}</strong></div>
-              <div className="preview-metric"><small>Release pressure</small><strong>{formatUsd(preview?.totalReleasePressureUsd)}</strong></div>
-              <div className="preview-metric"><small>Net yield</small><strong className={cx((preview?.netCaptureYieldPct ?? 0) >= 0 ? 'positive-text' : 'negative-text')}>{formatPct(preview?.netCaptureYieldPct)}</strong></div>
+              <div className="preview-metric"><small>{releaseHorizonDays}d effective capture</small><strong>{formatUsd(preview?.horizonEffectiveCaptureUsd)}</strong></div>
+              <div className="preview-metric"><small>{releaseHorizonDays}d release pressure</small><strong>{formatUsd(preview?.totalReleasePressureUsd)}</strong></div>
+              <div className="preview-metric"><small>{releaseHorizonDays}d net yield</small><strong className={cx((preview?.netCaptureYieldPct ?? 0) >= 0 ? 'positive-text' : 'negative-text')}>{formatPct(preview?.netCaptureYieldPct)}</strong></div>
             </div>
             {error && <p className="form-error" role="alert">{error}</p>}
           </section>
@@ -689,11 +783,12 @@ function TokenDrawer({ token, editingId, factors, onClose, onSave }: TokenDrawer
 
 interface MethodologyDrawerProps {
   factors: AdjustmentFactors
+  releaseHorizonDays: ReleaseHorizonDays
   onClose: () => void
   onOpenFactors: () => void
 }
 
-function MethodologyDrawer({ factors, onClose, onOpenFactors }: MethodologyDrawerProps) {
+function MethodologyDrawer({ factors, releaseHorizonDays, onClose, onOpenFactors }: MethodologyDrawerProps) {
   return (
     <div className="overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <aside className="drawer" aria-label="Methodology">
@@ -703,15 +798,16 @@ function MethodologyDrawer({ factors, onClose, onOpenFactors }: MethodologyDrawe
         </div>
         <div className="drawer-body">
           <p className="method-intro">
-            ValueBeast compares annualized, executed recurring value capture with the next 365 days of token releases. The primary rank is net capture yield relative to circulating market cap.
+            ValueBeast compares executed recurring value capture with token releases over the same {releaseHorizonDays}-day window. The primary rank is net capture yield relative to circulating market cap.
           </p>
-          <div className="formula-block">effective capture = annualized buybacks × destination factor + annualized recurring burns + annualized holder distributions{`\n`}release pressure = unlocks + inflationary emissions{`\n`}net capture yield = (effective capture − release pressure) ÷ circulating market cap</div>
+          <div className="formula-block">annualized effective capture = annualized buybacks × destination factor + annualized recurring burns + annualized holder distributions{`\n`}{releaseHorizonDays}d effective capture = annualized effective capture × {releaseHorizonDays} ÷ 365{`\n`}{releaseHorizonDays}d release pressure = unlocks + inflationary emissions{`\n`}net capture yield = ({releaseHorizonDays}d effective capture − {releaseHorizonDays}d release pressure) ÷ circulating market cap</div>
           <ul className="method-list">
             <li><b>01</b><span>Only executed recurring capture enters the calculation. Announced buybacks and one-off burns remain visible context.</span></li>
             <li><b>02</b><span>Evidence and program-status labels never add a hidden multiplier. Use filters to set your own research standard.</span></li>
             <li><b>03</b><span>A period shorter than 365 days is annualized and marked Provisional so the extrapolation stays visible.</span></li>
             <li><b>04</b><span>Missing unlock or emission data produces NR. A verified zero must be entered explicitly.</span></li>
             <li><b>05</b><span>Bought-and-burned amounts are a subset of buybacks and are never counted twice.</span></li>
+            <li><b>06</b><span>Release inputs are cumulative from the data date and are never estimated from another horizon.</span></li>
           </ul>
           <div className="section-title">Current destination factors <span>Applied to buybacks</span></div>
           <div className="factor-list">
@@ -785,7 +881,11 @@ function FactorsDrawer({ factors, onClose, onApply }: FactorsDrawerProps) {
 
 interface ImportDrawerProps {
   onClose: () => void
-  onImport: (tokens: TokenValueCaptureInput[], factors?: AdjustmentFactors) => void
+  onImport: (
+    tokens: TokenValueCaptureInput[],
+    factors?: AdjustmentFactors,
+    releaseHorizonDays?: ReleaseHorizonDays,
+  ) => void
 }
 
 function ImportDrawer({ onClose, onImport }: ImportDrawerProps) {
@@ -803,10 +903,13 @@ function ImportDrawer({ onClose, onImport }: ImportDrawerProps) {
         onImport(parseTokenInputs(parsed))
         return
       }
-      const state = parsed as Partial<StoredState>
+      const state = parsed as StoredStateInput
       onImport(
         parseTokenInputs(state.tokens),
         state.factors ? parseAdjustmentFactors(state.factors) : undefined,
+        state.releaseHorizonDays === undefined
+          ? 365
+          : parseReleaseHorizonDays(state.releaseHorizonDays),
       )
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Unable to read this file.')
@@ -840,6 +943,8 @@ function App() {
   const [tokens, setTokens] = useState(initial.tokens)
   const [factors, setFactors] = useState<AdjustmentFactors>(initial.factors)
   const [datasetType, setDatasetType] = useState<DatasetType>(initial.datasetType)
+  const [releaseHorizonDays, setReleaseHorizonDays] =
+    useState<ReleaseHorizonDays>(initial.releaseHorizonDays)
   const [drawer, setDrawer] = useState<Drawer>(null)
   const [editingToken, setEditingToken] = useState<TokenValueCaptureInput | null>(null)
   const [search, setSearch] = useState('')
@@ -851,9 +956,15 @@ function App() {
   const [toast, setToast] = useState('')
 
   useEffect(() => {
-    const state: StoredState = { version: 1, datasetType, tokens, factors }
+    const state: StoredState = {
+      version: 2,
+      datasetType,
+      tokens,
+      factors,
+      releaseHorizonDays,
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  }, [datasetType, factors, tokens])
+  }, [datasetType, factors, releaseHorizonDays, tokens])
 
   useEffect(() => {
     if (!toast) return
@@ -873,8 +984,8 @@ function App() {
   }, [])
 
   const ranked = useMemo(
-    () => rankTokens(tokens, { destination: factors.destination }),
-    [factors, tokens],
+    () => rankTokens(tokens, { destination: factors.destination }, releaseHorizonDays),
+    [factors, releaseHorizonDays, tokens],
   )
 
   const visibleRows = useMemo(() => {
@@ -890,7 +1001,7 @@ function App() {
 
   const metrics = useMemo(() => {
     const rankable = ranked.filter((row) => row.metrics.rankable)
-    const totalCapture = rankable.reduce((sum, row) => sum + row.metrics.annualizedEffectiveCaptureUsd, 0)
+    const totalCapture = rankable.reduce((sum, row) => sum + row.metrics.horizonEffectiveCaptureUsd, 0)
     const totalPressure = rankable.reduce((sum, row) => sum + (row.metrics.totalReleasePressureUsd ?? 0), 0)
     const netYields = rankable.map((row) => row.metrics.netCaptureYieldPct).filter((value): value is number => value !== null)
     const highEvidence = ranked.filter((row) => row.input.evidenceLevel === 'onchain' || row.input.evidenceLevel === 'official').length
@@ -938,12 +1049,19 @@ function App() {
   const restoreSample = () => {
     setTokens(cloneSample())
     setFactors(DEFAULT_ADJUSTMENT_FACTORS)
+    setReleaseHorizonDays(365)
     setDatasetType('illustrative')
     setToast('Illustrative dataset restored')
   }
 
   const exportJson = () => {
-    const state: StoredState = { version: 1, datasetType, tokens, factors }
+    const state: StoredState = {
+      version: 2,
+      datasetType,
+      tokens,
+      factors,
+      releaseHorizonDays,
+    }
     downloadFile('valuebeast-dataset.json', JSON.stringify(state, null, 2), 'application/json')
     setExportOpen(false)
     setToast('JSON exported')
@@ -958,7 +1076,13 @@ function App() {
   }
 
   const copyShareLink = async () => {
-    const state: StoredState = { version: 1, datasetType, tokens, factors }
+    const state: StoredState = {
+      version: 2,
+      datasetType,
+      tokens,
+      factors,
+      releaseHorizonDays,
+    }
     const url = new URL(window.location.href)
     url.hash = `data=${encodeShareState(state)}`
     try {
@@ -969,9 +1093,14 @@ function App() {
     }
   }
 
-  const importTokens = (nextTokens: TokenValueCaptureInput[], nextFactors?: AdjustmentFactors) => {
+  const importTokens = (
+    nextTokens: TokenValueCaptureInput[],
+    nextFactors?: AdjustmentFactors,
+    nextReleaseHorizonDays?: ReleaseHorizonDays,
+  ) => {
     setTokens(nextTokens)
     if (nextFactors) setFactors(nextFactors)
+    if (nextReleaseHorizonDays) setReleaseHorizonDays(nextReleaseHorizonDays)
     setDatasetType('custom')
     setDrawer(null)
     setToast(`${nextTokens.length} tokens imported`)
@@ -1005,7 +1134,7 @@ function App() {
         <div>
           <div className="eyebrow">Open research workspace</div>
           <h1>Track value capture.<br />Price the dilution.</h1>
-          <p className="hero-copy">Rank tokens by executed, recurring economic value returned against the next 365 days of unlocks and inflationary emissions. Every adjustment stays visible.</p>
+          <p className="hero-copy">Rank tokens by executed, recurring economic value returned against the next {releaseHorizonDays} days of unlocks and inflationary emissions. Capture and releases use the same window.</p>
         </div>
         <div className="hero-side">
           {datasetType === 'illustrative' && <span className="sample-badge">Illustrative sample data</span>}
@@ -1029,12 +1158,12 @@ function App() {
         <article className="metric-card">
           <div className="metric-label"><span>Effective capture</span><Activity size={15} /></div>
           <div className="metric-value">{formatUsd(metrics.totalCapture)}</div>
-          <div className="metric-note">Annualized recurring amount</div>
+          <div className="metric-note">{releaseHorizonDays}d recurring run rate</div>
         </article>
         <article className="metric-card">
           <div className="metric-label"><span>Median net yield</span><Gauge size={15} /></div>
           <div className={cx('metric-value', (metrics.medianYield ?? 0) >= 0 ? 'positive' : 'negative')}>{formatPct(metrics.medianYield)}</div>
-          <div className="metric-note">After unlocks and emissions</div>
+          <div className="metric-note">After {releaseHorizonDays}d unlocks and emissions</div>
         </article>
         <article className="metric-card">
           <div className="metric-label"><span>Research coverage</span><ShieldCheck size={15} /></div>
@@ -1046,6 +1175,23 @@ function App() {
       <section className="workspace-card" aria-label="Token rankings">
         <div className="workspace-toolbar">
           <div className="filter-group">
+            <div className="horizon-control" role="radiogroup" aria-label="Release window">
+              <span className="horizon-label">Release window</span>
+              <div className="horizon-options">
+                {RELEASE_HORIZONS.map((days) => (
+                  <button
+                    className={cx('horizon-option', releaseHorizonDays === days && 'active')}
+                    type="button"
+                    role="radio"
+                    aria-checked={releaseHorizonDays === days}
+                    key={days}
+                    onClick={() => setReleaseHorizonDays(days)}
+                  >
+                    {days}d
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="search-wrap">
               <Search size={15} />
               <input className="input search-input" type="search" aria-label="Search tokens" placeholder="Search project or symbol" value={search} onChange={(event) => setSearch(event.target.value)} />
@@ -1077,10 +1223,10 @@ function App() {
                     <th className="sticky-cell" aria-sort={sortAria(sort, 'token')}><SortButton label="Token" sortKey="token" sort={sort} onSort={changeSort} /></th>
                     <th>Destination</th>
                     <th>Evidence</th>
-                    <th className="numeric" aria-sort={sortAria(sort, 'effectiveCapture')}><SortButton label="Effective capture" sortKey="effectiveCapture" sort={sort} onSort={changeSort} /></th>
-                    <th className="numeric" aria-sort={sortAria(sort, 'releasePressure')}><SortButton label="Release pressure" sortKey="releasePressure" sort={sort} onSort={changeSort} /></th>
-                    <th className="numeric" aria-sort={sortAria(sort, 'grossYield')}><SortButton label="Capture yield" sortKey="grossYield" sort={sort} onSort={changeSort} /></th>
-                    <th className="numeric" aria-sort={sortAria(sort, 'netYield')}><SortButton label="Net yield" sortKey="netYield" sort={sort} onSort={changeSort} /></th>
+                    <th className="numeric" aria-sort={sortAria(sort, 'effectiveCapture')}><SortButton label={`${releaseHorizonDays}d capture`} sortKey="effectiveCapture" sort={sort} onSort={changeSort} /></th>
+                    <th className="numeric" aria-sort={sortAria(sort, 'releasePressure')}><SortButton label={`${releaseHorizonDays}d pressure`} sortKey="releasePressure" sort={sort} onSort={changeSort} /></th>
+                    <th className="numeric" aria-sort={sortAria(sort, 'grossYield')}><SortButton label={`${releaseHorizonDays}d capture yield`} sortKey="grossYield" sort={sort} onSort={changeSort} /></th>
+                    <th className="numeric" aria-sort={sortAria(sort, 'netYield')}><SortButton label={`${releaseHorizonDays}d net yield`} sortKey="netYield" sort={sort} onSort={changeSort} /></th>
                     <th className="numeric" aria-sort={sortAria(sort, 'coverage')}><SortButton label="Coverage" sortKey="coverage" sort={sort} onSort={changeSort} /></th>
                     <th className="numeric">Actions</th>
                   </tr>
@@ -1100,9 +1246,9 @@ function App() {
                         </td>
                         <td><span className="mechanism-pill">{DESTINATION_LABELS[row.input.buybackDestination]}</span></td>
                         <td><span className={cx('evidence-pill', evidenceTone(row.input.evidenceLevel))}>{EVIDENCE_LABELS[row.input.evidenceLevel]}</span></td>
-                        <td className="numeric mono-value">{formatUsd(row.metrics.annualizedEffectiveCaptureUsd)}</td>
+                        <td className="numeric mono-value">{formatUsd(row.metrics.horizonEffectiveCaptureUsd)}</td>
                         <td className="numeric mono-value" title={row.metrics.unrankedReason ?? undefined}>{formatUsd(row.metrics.totalReleasePressureUsd)}</td>
-                        <td className="numeric mono-value">{formatPct(row.metrics.effectiveCaptureYieldPct)}</td>
+                        <td className="numeric mono-value">{formatPct(row.metrics.horizonEffectiveCaptureYieldPct)}</td>
                         <td className={cx('numeric', 'mono-value', 'yield-cell', netYield === null ? 'neutral-text' : netYield >= 0 ? 'positive-text' : 'negative-text')} title={row.metrics.unrankedReason ?? undefined}>
                           {formatPct(netYield)}
                           {netYield !== null && <div className="yield-bar"><span style={{ width: `${Math.min(100, Math.abs(netYield) * 6)}%` }} /></div>}
@@ -1130,11 +1276,11 @@ function App() {
                       <div className="token-monogram">{monogram(row.input.symbol)}</div>
                       <div><div className="token-name">{row.input.name}</div><div className="token-symbol">{row.input.symbol}{row.input.capturePeriodDays < 365 ? ' · provisional' : ''}</div></div>
                     </div>
-                    <div className={cx('mobile-score', (row.metrics.netCaptureYieldPct ?? 0) < 0 && 'negative-text')}><small>Net yield</small>{formatPct(row.metrics.netCaptureYieldPct)}</div>
+                    <div className={cx('mobile-score', (row.metrics.netCaptureYieldPct ?? 0) < 0 && 'negative-text')}><small>{releaseHorizonDays}d net yield</small>{formatPct(row.metrics.netCaptureYieldPct)}</div>
                   </div>
                   <div className="mobile-rank-meta">
-                    <div><small>Capture</small><strong>{formatUsd(row.metrics.annualizedEffectiveCaptureUsd)}</strong></div>
-                    <div><small>Pressure</small><strong>{formatUsd(row.metrics.totalReleasePressureUsd)}</strong></div>
+                    <div><small>Capture · {releaseHorizonDays}d</small><strong>{formatUsd(row.metrics.horizonEffectiveCaptureUsd)}</strong></div>
+                    <div><small>Pressure · {releaseHorizonDays}d</small><strong>{formatUsd(row.metrics.totalReleasePressureUsd)}</strong></div>
                     <div><small>Coverage</small><strong>{formatRatio(row.metrics.coverageRatio, row.metrics.rankable)}</strong></div>
                   </div>
                   <div className="mobile-card-actions">
@@ -1152,17 +1298,17 @@ function App() {
 
         <footer className="workspace-footer">
           <div className="save-state">Saved locally in this browser</div>
-          <div>{visibleRows.length} visible · {ranked.filter((row) => !row.metrics.rankable).length} unranked · factors are user-adjustable</div>
+          <div>{visibleRows.length} visible · {ranked.filter((row) => !row.metrics.rankable).length} unranked · {releaseHorizonDays}d horizon · factors are user-adjustable</div>
         </footer>
       </section>
 
       <button className="button button-primary mobile-add" type="button" onClick={openAdd}><Plus size={16} /> Add token</button>
 
       {drawer === 'token' && (
-        <TokenDrawer token={editingToken ?? EMPTY_TOKEN} editingId={editingToken?.id} factors={factors} onClose={() => setDrawer(null)} onSave={saveToken} />
+        <TokenDrawer token={editingToken ?? EMPTY_TOKEN} editingId={editingToken?.id} factors={factors} releaseHorizonDays={releaseHorizonDays} onClose={() => setDrawer(null)} onSave={saveToken} />
       )}
       {drawer === 'methodology' && (
-        <MethodologyDrawer factors={factors} onClose={() => setDrawer(null)} onOpenFactors={() => setDrawer('factors')} />
+        <MethodologyDrawer factors={factors} releaseHorizonDays={releaseHorizonDays} onClose={() => setDrawer(null)} onOpenFactors={() => setDrawer('factors')} />
       )}
       {drawer === 'factors' && (
         <FactorsDrawer factors={factors} onClose={() => setDrawer(null)} onApply={(next) => { setFactors(next); setDrawer(null); setToast('Destination factors applied') }} />

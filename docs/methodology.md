@@ -6,10 +6,11 @@ ValueBeast compares backward-looking value capture with forward-looking dilution
 
 - An official result uses actual value capture from the trailing 365 days ending on the dataset's `as of` date.
 - A dataset with 90 to 364 consecutive days can show an annualized recurring run rate, but the result is labeled provisional.
-- Unlock value uses the next 365 days beginning on that same date.
+- The release window can be 90, 180, or 365 days beginning on that same date. The default is 365 days.
+- Annualized effective capture is scaled to the selected release window before net yield and coverage are calculated.
 - Market capitalization, FDV, and unlock value should use the same token price and timestamp.
 
-Mixing periods can distort the result. A quarterly buyback should not be compared directly with a full year of releases unless it is clearly annualized and labeled provisional. One-off burns and capital returns are never annualized.
+Mixing periods can distort the result. ValueBeast therefore compares a 90-day capture run rate with 90-day releases, a 180-day run rate with 180-day releases, and a 365-day run rate with 365-day releases. A shorter capture observation period can be annualized, but it remains labeled provisional. One-off burns and capital returns are never annualized.
 
 ## Value-capture inputs
 
@@ -42,7 +43,7 @@ These factors are explicit assumptions, not facts. Users can change them and obs
 
 ## Unlock input
 
-Forward release pressure includes team, investor, treasury, ecosystem, and other previously non-circulating allocations expected to become transferable during the next 365 days. It also includes inflationary emissions expected under the current protocol rules.
+Forward release pressure includes team, investor, treasury, ecosystem, and other previously non-circulating allocations expected to become transferable during the selected 90-day, 180-day, or 365-day window. It also includes inflationary emissions expected under the current protocol rules.
 
 ```text
 unlock value = unlocked token amount × measurement-date token price
@@ -52,7 +53,9 @@ emission value = newly issued token amount × measurement-date token price
 release pressure = unlock value + emission value
 ```
 
-Release pressure measures potential dilution, not guaranteed selling. ValueBeast subtracts it to provide a conservative comparison with value capture. If either forward component is unknown, the token is marked `NR` instead of treating missing data as zero.
+Each horizon is cumulative from the data date. Known values should satisfy `90d ≤ 180d ≤ 365d` separately for unlocks and emissions. ValueBeast never prorates a 365-day total to estimate a shorter horizon because unlock schedules are often uneven.
+
+Release pressure measures potential dilution, not guaranteed selling. ValueBeast subtracts it to provide a conservative comparison with value capture over the same period. If either forward component is unknown for the selected horizon, the token is marked `NR` instead of treating missing data as zero. Missing data at another horizon does not prevent ranking the selected one.
 
 ## Ranking formulas
 
@@ -61,26 +64,28 @@ For token `i`:
 ```text
 effective_buybacks_i = executed_buybacks_i × destination_factor_i
 
-gross_capture_i = effective_buybacks_i
-                + direct_burns_i
-                + holder_distributions_i
+annualized_capture_i = effective_buybacks_i
+                     + direct_burns_i
+                     + holder_distributions_i
 
-net_capture_i = gross_capture_i − forward_release_pressure_i
+horizon_capture_i = annualized_capture_i × selected_days / 365
 
-gross_yield_i = gross_capture_i / circulating_market_cap_i
+net_capture_i = horizon_capture_i − forward_release_pressure_i
+
+capture_yield_i = horizon_capture_i / circulating_market_cap_i
 
 release_dilution_i = forward_release_pressure_i / circulating_market_cap_i
 
 net_yield_i = net_capture_i / circulating_market_cap_i
 
-coverage_i = gross_capture_i / forward_release_pressure_i
+coverage_i = horizon_capture_i / forward_release_pressure_i
 ```
 
-Tokens sort by `net_yield` from highest to lowest. Ties sort by `coverage`, then `gross_yield`, then symbol. When release pressure is zero and gross capture is positive, coverage is shown as unlimited. Tokens with incomplete forward data remain visible but unranked.
+Tokens sort by `net_yield` from highest to lowest. Ties sort by `coverage`, then `capture_yield`, then symbol. When release pressure is zero and horizon capture is positive, coverage is shown as unlimited. Tokens with incomplete data for the selected horizon remain visible but unranked. The 365-day selection exactly preserves the original ranking semantics because its horizon factor is 1.
 
 ## Worked example
 
-Assume a token has:
+Assume the default 365-day window and a token has:
 
 - $1.0 billion circulating market cap
 - $1.6 billion FDV

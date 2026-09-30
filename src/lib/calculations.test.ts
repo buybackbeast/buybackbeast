@@ -16,6 +16,10 @@ const base: TokenValueCaptureInput = {
   boughtAndBurnedUsdInPeriod: 80_000_000,
   announcedBuybacksUsd: 25_000_000,
   oneOffBurnsUsd: 100_000_000,
+  unlockUsd90d: 8_000_000,
+  inflationaryEmissionsUsd90d: 2_000_000,
+  unlockUsd180d: 20_000_000,
+  inflationaryEmissionsUsd180d: 3_000_000,
   unlockUsd365d: 45_000_000,
   inflationaryEmissionsUsd365d: 5_000_000,
   buybackDestination: 'burn',
@@ -39,6 +43,27 @@ describe('calculateTokenMetrics', () => {
     expect(metrics.coverageRatio).toBe(1.9)
     expect(metrics.fdvPremiumPct).toBe(60)
     expect(metrics.rankable).toBe(true)
+    expect(metrics.releaseHorizonDays).toBe(365)
+  })
+
+  it('uses exact cumulative release inputs for each selected horizon', () => {
+    const ninetyDay = calculateTokenMetrics(base, {}, 90)
+    const oneEightyDay = calculateTokenMetrics(base, {}, 180)
+    const defaultHorizon = calculateTokenMetrics(base)
+
+    expect(ninetyDay.totalReleasePressureUsd).toBe(10_000_000)
+    expect(ninetyDay.horizonEffectiveCaptureUsd).toBeCloseTo(23_424_657.53)
+    expect(ninetyDay.netCaptureYieldPct).toBeCloseTo(1.34246575)
+    expect(oneEightyDay.totalReleasePressureUsd).toBe(23_000_000)
+    expect(oneEightyDay.horizonEffectiveCaptureUsd).toBeCloseTo(46_849_315.07)
+    expect(oneEightyDay.netCaptureYieldPct).toBeCloseTo(2.38493151)
+    expect(defaultHorizon.totalReleasePressureUsd).toBe(50_000_000)
+    expect(defaultHorizon.netCaptureYieldPct).toBe(4.5)
+    expect(ninetyDay.annualizedEffectiveCaptureUsd).toBe(95_000_000)
+    expect(ninetyDay.horizonCaptureFactor).toBeCloseTo(90 / 365)
+    expect(ninetyDay.formulas.totalReleasePressureUsd.expression).toContain(
+      'next 90d',
+    )
   })
 
   it('does not double count bought-and-burned value or contextual amounts', () => {
@@ -84,9 +109,28 @@ describe('calculateTokenMetrics', () => {
     expect(metrics.unrankedReason).toContain('forward unlock value')
   })
 
+  it('makes missing data horizon-specific', () => {
+    const metrics = calculateTokenMetrics(
+      { ...base, unlockUsd90d: null },
+      {},
+      90,
+    )
+
+    expect(metrics.rankable).toBe(false)
+    expect(metrics.netCaptureYieldPct).toBeNull()
+    expect(metrics.unrankedReason).toContain('90-day forward unlock value')
+    expect(calculateTokenMetrics({ ...base, unlockUsd90d: null }).rankable).toBe(
+      true,
+    )
+  })
+
   it('accepts verified zero release pressure as rankable', () => {
     const metrics = calculateTokenMetrics({
       ...base,
+      unlockUsd90d: 0,
+      inflationaryEmissionsUsd90d: 0,
+      unlockUsd180d: 0,
+      inflationaryEmissionsUsd180d: 0,
       unlockUsd365d: 0,
       inflationaryEmissionsUsd365d: 0,
     })

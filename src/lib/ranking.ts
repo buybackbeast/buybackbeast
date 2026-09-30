@@ -2,6 +2,7 @@ import { calculateTokenMetrics } from './calculations'
 import type {
   AdjustmentFactorOverrides,
   RankedToken,
+  ReleaseHorizonDays,
   TokenValueCaptureInput,
 } from './types'
 import { parseTokenInputs } from './validation'
@@ -22,11 +23,12 @@ function coverageSortValue(value: number | null): number {
 export function rankTokens(
   unparsedInputs: TokenValueCaptureInput[],
   overrides: AdjustmentFactorOverrides = {},
+  releaseHorizonDays: ReleaseHorizonDays = 365,
 ): RankedToken[] {
   const inputs = parseTokenInputs(unparsedInputs)
   const rows = inputs.map((input) => ({
     input,
-    metrics: calculateTokenMetrics(input, overrides),
+    metrics: calculateTokenMetrics(input, overrides, releaseHorizonDays),
   }))
 
   rows.sort((left, right) => {
@@ -55,8 +57,8 @@ export function rankTokens(
     if (coverageOrder !== 0) return coverageOrder
 
     const grossYieldOrder = descending(
-      left.metrics.effectiveCaptureYieldPct,
-      right.metrics.effectiveCaptureYieldPct,
+      left.metrics.horizonEffectiveCaptureYieldPct,
+      right.metrics.horizonEffectiveCaptureYieldPct,
     )
     if (grossYieldOrder !== 0) return grossYieldOrder
 

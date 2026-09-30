@@ -4,6 +4,7 @@ import type {
   AdjustmentFactorOverrides,
   AdjustmentFactors,
   CalculationFormulaMap,
+  ReleaseHorizonDays,
   TokenMetrics,
   TokenValueCaptureInput,
 } from './types'
@@ -21,11 +22,14 @@ export const DEFAULT_ADJUSTMENT_FACTORS: AdjustmentFactors = Object.freeze({
 interface RawMetricValues {
   capturePeriodGrossUsd: Decimal
   annualizationFactor: Decimal
+  horizonCaptureFactor: Decimal
   annualizedExecutedBuybacksUsd: Decimal
   annualizedRecurringDirectBurnsUsd: Decimal
   annualizedHolderDistributionsUsd: Decimal
   annualizedGrossCaptureUsd: Decimal
   annualizedEffectiveCaptureUsd: Decimal
+  horizonEffectiveCaptureUsd: Decimal
+  horizonEffectiveCaptureYieldPct: Decimal
   grossCaptureYieldPct: Decimal
   effectiveCaptureYieldPct: Decimal
   unlockDilutionPct: Decimal | null
@@ -39,6 +43,11 @@ interface RawMetricValues {
   appliedDestinationFactor: Decimal
   rankable: boolean
   unrankedReason: string | null
+}
+
+interface ReleaseInputs {
+  unlockUsd: number | null
+  emissionsUsd: number | null
 }
 
 const decimal = (value: number): Decimal => new Decimal(value)
@@ -59,19 +68,49 @@ export function resolveAdjustmentFactors(
   })
 }
 
-function getUnrankedReason(input: TokenValueCaptureInput): string | null {
+function getReleaseInputs(
+  input: TokenValueCaptureInput,
+  releaseHorizonDays: ReleaseHorizonDays,
+): ReleaseInputs {
+  if (releaseHorizonDays === 90) {
+    return {
+      unlockUsd: input.unlockUsd90d,
+      emissionsUsd: input.inflationaryEmissionsUsd90d,
+    }
+  }
+
+  if (releaseHorizonDays === 180) {
+    return {
+      unlockUsd: input.unlockUsd180d,
+      emissionsUsd: input.inflationaryEmissionsUsd180d,
+    }
+  }
+
+  return {
+    unlockUsd: input.unlockUsd365d,
+    emissionsUsd: input.inflationaryEmissionsUsd365d,
+  }
+}
+
+function getUnrankedReason(
+  releaseInputs: ReleaseInputs,
+  releaseHorizonDays: ReleaseHorizonDays,
+): string | null {
   const missing: string[] = []
-  if (input.unlockUsd365d === null) missing.push('forward unlock value')
-  if (input.inflationaryEmissionsUsd365d === null) {
+  if (releaseInputs.unlockUsd === null) missing.push('forward unlock value')
+  if (releaseInputs.emissionsUsd === null) {
     missing.push('forward inflationary emissions')
   }
 
-  return missing.length === 0 ? null : `Missing ${missing.join(' and ')}`
+  return missing.length === 0
+    ? null
+    : `Missing ${releaseHorizonDays}-day ${missing.join(' and ')}`
 }
 
 function calculateRawMetrics(
   input: TokenValueCaptureInput,
   factors: AdjustmentFactors,
+  releaseHorizonDays: ReleaseHorizonDays,
 ): RawMetricValues {
   const marketCap = decimal(input.circulatingMarketCapUsd)
   const annualizationFactor = decimal(365).div(input.capturePeriodDays)
@@ -97,13 +136,18 @@ function calculateRawMetrics(
     .times(appliedDestinationFactor)
     .plus(annualizedRecurringDirectBurnsUsd)
     .plus(annualizedHolderDistributionsUsd)
+  const horizonCaptureFactor = decimal(releaseHorizonDays).div(365)
+  const horizonEffectiveCaptureUsd = annualizedEffectiveCaptureUsd.times(
+    horizonCaptureFactor,
+  )
 
+  const releaseInputs = getReleaseInputs(input, releaseHorizonDays)
   const unlockValue =
-    input.unlockUsd365d === null ? null : decimal(input.unlockUsd365d)
+    releaseInputs.unlockUsd === null ? null : decimal(releaseInputs.unlockUsd)
   const emissionsValue =
-    input.inflationaryEmissionsUsd365d === null
+    releaseInputs.emissionsUsd === null
       ? null
-      : decimal(input.inflationaryEmissionsUsd365d)
+      : decimal(releaseInputs.emissionsUsd)
   const hasCompleteReleaseData = unlockValue !== null && emissionsValue !== null
   const totalReleasePressureUsd = hasCompleteReleaseData
     ? unlockValue.plus(emissionsValue)
@@ -111,21 +155,26 @@ function calculateRawMetrics(
   const netCaptureUsd =
     totalReleasePressureUsd === null
       ? null
-      : annualizedEffectiveCaptureUsd.minus(totalReleasePressureUsd)
+      : horizonEffectiveCaptureUsd.minus(totalReleasePressureUsd)
   const coverageRatio =
     totalReleasePressureUsd === null || totalReleasePressureUsd.isZero()
       ? null
-      : annualizedEffectiveCaptureUsd.div(totalReleasePressureUsd)
-  const unrankedReason = getUnrankedReason(input)
+      : horizonEffectiveCaptureUsd.div(totalReleasePressureUsd)
+  const unrankedReason = getUnrankedReason(releaseInputs, releaseHorizonDays)
 
   return {
     capturePeriodGrossUsd,
     annualizationFactor,
+    horizonCaptureFactor,
     annualizedExecutedBuybacksUsd,
     annualizedRecurringDirectBurnsUsd,
     annualizedHolderDistributionsUsd,
     annualizedGrossCaptureUsd,
     annualizedEffectiveCaptureUsd,
+    horizonEffectiveCaptureUsd,
+    horizonEffectiveCaptureYieldPct: horizonEffectiveCaptureUsd
+      .div(marketCap)
+      .times(100),
     grossCaptureYieldPct: annualizedGrossCaptureUsd.div(marketCap).times(100),
     effectiveCaptureYieldPct: annualizedEffectiveCaptureUsd
       .div(marketCap)
@@ -153,27 +202,30 @@ function calculateRawMetrics(
   }
 }
 
-function missingReleaseText(input: TokenValueCaptureInput): string {
+function missingReleaseText(releaseInputs: ReleaseInputs): string {
   const missing: string[] = []
-  if (input.unlockUsd365d === null) missing.push('unlock')
-  if (input.inflationaryEmissionsUsd365d === null) missing.push('emissions')
+  if (releaseInputs.unlockUsd === null) missing.push('unlock')
+  if (releaseInputs.emissionsUsd === null) missing.push('emissions')
   return `NR: missing ${missing.join(' and ')} data`
 }
 
 function buildFormulaMap(
   input: TokenValueCaptureInput,
   values: RawMetricValues,
+  releaseHorizonDays: ReleaseHorizonDays,
 ): CalculationFormulaMap {
   const marketCap = plain(input.circulatingMarketCapUsd)
   const annualization = plain(values.annualizationFactor)
   const gross = plain(values.annualizedGrossCaptureUsd)
   const effective = plain(values.annualizedEffectiveCaptureUsd)
+  const horizonEffective = plain(values.horizonEffectiveCaptureUsd)
   const destinationFactor = plain(values.appliedDestinationFactor)
   const release =
     values.totalReleasePressureUsd === null
       ? null
       : plain(values.totalReleasePressureUsd)
-  const missing = missingReleaseText(input)
+  const releaseInputs = getReleaseInputs(input, releaseHorizonDays)
+  const missing = missingReleaseText(releaseInputs)
 
   return {
     annualizedGrossCaptureUsd: {
@@ -190,6 +242,12 @@ function buildFormulaMap(
       substituted: `${plain(values.annualizedExecutedBuybacksUsd)} × ${destinationFactor} + ${plain(values.annualizedRecurringDirectBurnsUsd)} + ${plain(values.annualizedHolderDistributionsUsd)} = ${effective}; evidence and program status do not change dollars`,
       result: number(values.annualizedEffectiveCaptureUsd),
     },
+    horizonEffectiveCaptureUsd: {
+      label: `${releaseHorizonDays}-day effective recurring capture`,
+      expression: `annualized effective capture × ${releaseHorizonDays} ÷ 365`,
+      substituted: `${effective} × ${releaseHorizonDays} ÷ 365 = ${horizonEffective}`,
+      result: number(values.horizonEffectiveCaptureUsd),
+    },
     grossCaptureYieldPct: {
       label: 'Gross capture yield',
       expression: 'annualized gross capture ÷ circulating market cap × 100',
@@ -203,31 +261,30 @@ function buildFormulaMap(
       result: number(values.effectiveCaptureYieldPct),
     },
     unlockDilutionPct: {
-      label: 'Forward unlock pressure',
-      expression: 'next 365d unlock value ÷ circulating market cap × 100',
+      label: `${releaseHorizonDays}-day forward unlock pressure`,
+      expression: `next ${releaseHorizonDays}d unlock value ÷ circulating market cap × 100`,
       substituted:
-        input.unlockUsd365d === null
+        releaseInputs.unlockUsd === null
           ? 'NR: missing unlock data'
-          : `${plain(input.unlockUsd365d)} ÷ ${marketCap} × 100 = ${plain(values.unlockDilutionPct!)}%`,
+          : `${plain(releaseInputs.unlockUsd)} ÷ ${marketCap} × 100 = ${plain(values.unlockDilutionPct!)}%`,
       result: numberOrNull(values.unlockDilutionPct),
     },
     emissionsDilutionPct: {
-      label: 'Forward emissions pressure',
-      expression:
-        'next 365d inflationary emissions value ÷ circulating market cap × 100',
+      label: `${releaseHorizonDays}-day forward emissions pressure`,
+      expression: `next ${releaseHorizonDays}d inflationary emissions value ÷ circulating market cap × 100`,
       substituted:
-        input.inflationaryEmissionsUsd365d === null
+        releaseInputs.emissionsUsd === null
           ? 'NR: missing emissions data'
-          : `${plain(input.inflationaryEmissionsUsd365d)} ÷ ${marketCap} × 100 = ${plain(values.emissionsDilutionPct!)}%`,
+          : `${plain(releaseInputs.emissionsUsd)} ÷ ${marketCap} × 100 = ${plain(values.emissionsDilutionPct!)}%`,
       result: numberOrNull(values.emissionsDilutionPct),
     },
     totalReleasePressureUsd: {
-      label: 'Total release pressure',
-      expression: 'next 365d unlock value + next 365d inflationary emissions value',
+      label: `${releaseHorizonDays}-day total release pressure`,
+      expression: `next ${releaseHorizonDays}d unlock value + next ${releaseHorizonDays}d inflationary emissions value`,
       substituted:
         release === null
           ? missing
-          : `${plain(input.unlockUsd365d!)} + ${plain(input.inflationaryEmissionsUsd365d!)} = ${release}`,
+          : `${plain(releaseInputs.unlockUsd!)} + ${plain(releaseInputs.emissionsUsd!)} = ${release}`,
       result: numberOrNull(values.totalReleasePressureUsd),
     },
     releasePressureYieldPct: {
@@ -241,11 +298,11 @@ function buildFormulaMap(
     },
     netCaptureUsd: {
       label: 'Net capture',
-      expression: 'annualized effective capture − total release pressure',
+      expression: `${releaseHorizonDays}-day effective capture − ${releaseHorizonDays}-day total release pressure`,
       substituted:
         release === null
           ? missing
-          : `${effective} − ${release} = ${plain(values.netCaptureUsd!)}`,
+          : `${horizonEffective} − ${release} = ${plain(values.netCaptureUsd!)}`,
       result: numberOrNull(values.netCaptureUsd),
     },
     netCaptureYieldPct: {
@@ -259,13 +316,13 @@ function buildFormulaMap(
     },
     coverageRatio: {
       label: 'Release coverage',
-      expression: 'annualized effective capture ÷ total release pressure',
+      expression: `${releaseHorizonDays}-day effective capture ÷ ${releaseHorizonDays}-day total release pressure`,
       substituted:
         release === null
           ? missing
           : values.coverageRatio === null
-            ? `${effective} ÷ 0 = n/a (verified zero release pressure)`
-            : `${effective} ÷ ${release} = ${plain(values.coverageRatio)}×`,
+            ? `${horizonEffective} ÷ 0 = n/a (verified zero release pressure)`
+            : `${horizonEffective} ÷ ${release} = ${plain(values.coverageRatio)}×`,
       result: numberOrNull(values.coverageRatio),
     },
     fdvPremiumPct: {
@@ -280,22 +337,26 @@ function buildFormulaMap(
 export function formatCalculationFormula(
   unparsedInput: TokenValueCaptureInput,
   overrides: AdjustmentFactorOverrides = {},
+  releaseHorizonDays: ReleaseHorizonDays = 365,
 ): CalculationFormulaMap {
   const input = parseTokenInput(unparsedInput)
   const factors = resolveAdjustmentFactors(overrides)
-  const values = calculateRawMetrics(input, factors)
-  return buildFormulaMap(input, values)
+  const values = calculateRawMetrics(input, factors, releaseHorizonDays)
+  return buildFormulaMap(input, values, releaseHorizonDays)
 }
 
 export function calculateTokenMetrics(
   unparsedInput: TokenValueCaptureInput,
   overrides: AdjustmentFactorOverrides = {},
+  releaseHorizonDays: ReleaseHorizonDays = 365,
 ): TokenMetrics {
   const input = parseTokenInput(unparsedInput)
   const factors = resolveAdjustmentFactors(overrides)
-  const values = calculateRawMetrics(input, factors)
+  const values = calculateRawMetrics(input, factors, releaseHorizonDays)
 
   return {
+    releaseHorizonDays,
+    horizonCaptureFactor: number(values.horizonCaptureFactor),
     capturePeriodGrossUsd: number(values.capturePeriodGrossUsd),
     annualizationFactor: number(values.annualizationFactor),
     annualizationStatus:
@@ -313,6 +374,10 @@ export function calculateTokenMetrics(
     annualizedEffectiveCaptureUsd: number(
       values.annualizedEffectiveCaptureUsd,
     ),
+    horizonEffectiveCaptureUsd: number(values.horizonEffectiveCaptureUsd),
+    horizonEffectiveCaptureYieldPct: number(
+      values.horizonEffectiveCaptureYieldPct,
+    ),
     grossCaptureYieldPct: number(values.grossCaptureYieldPct),
     effectiveCaptureYieldPct: number(values.effectiveCaptureYieldPct),
     unlockDilutionPct: numberOrNull(values.unlockDilutionPct),
@@ -326,6 +391,6 @@ export function calculateTokenMetrics(
     appliedDestinationFactor: number(values.appliedDestinationFactor),
     rankable: values.rankable,
     unrankedReason: values.unrankedReason,
-    formulas: buildFormulaMap(input, values),
+    formulas: buildFormulaMap(input, values, releaseHorizonDays),
   }
 }
