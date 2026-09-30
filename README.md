@@ -6,7 +6,7 @@ An open-source research workspace for ranking crypto tokens by value returned to
 
 [Open the live demo](https://buybackbeast.github.io/buybackbeast/) · [Read the methodology](docs/methodology.md) · [Contribute sourced data](https://github.com/buybackbeast/buybackbeast/issues/2)
 
-BUYBACKBEAST puts executed buybacks, protocol-funded burns, holder distributions, and forward unlocks on one comparable USD basis. Researchers can inspect matched 90-day, 180-day, or 365-day windows. The default remains 365 days, and every input and adjustment is visible.
+BUYBACKBEAST puts executed buybacks, protocol-funded burns, holder distributions, and forward unlocks on one comparable USD basis. Researchers can inspect matched 7-day, 30-day, 90-day, 180-day, or 365-day windows. The default remains 365 days, and every input and adjustment is visible.
 
 ## Why this exists
 
@@ -46,14 +46,14 @@ net capture yield = net value capture ÷ circulating market cap
 release coverage = horizon capture ÷ forward release pressure
 ```
 
-The default table ranks the 365-day window by net capture yield, then unlock coverage, then capture yield. Selecting 90 or 180 days recalculates both capture and release pressure over that same window. There is no hidden composite score.
+The default table ranks the 365-day window by net capture yield, then unlock coverage, then capture yield. Selecting 7, 30, 90, or 180 days recalculates both capture and release pressure over that same window. There is no hidden composite score.
 
 ### What counts
 
 - **Executed buybacks:** Tokens acquired with protocol or product cash flow during the trailing 12 months.
 - **Direct economic burns:** Tokens destroyed through fee-funded or revenue-funded mechanisms, excluding tokens already counted as bought and burned.
 - **Holder distributions:** Cash, stablecoins, or other assets distributed to token holders.
-- **Forward unlocks and emissions:** Cumulative USD values for tokens scheduled to enter circulation within 90, 180, and 365 days of the data date.
+- **Forward unlocks and emissions:** Cumulative USD values for tokens scheduled to enter circulation within 7, 30, 90, 180, and 365 days of the data date.
 - **Announced buybacks:** Displayed for context and excluded from ranking until executed.
 
 ### Destination factors
@@ -63,7 +63,7 @@ An executed buyback does not always remove supply permanently. BUYBACKBEAST ther
 ## Features
 
 - Sortable token ranking with gross yield, unlock dilution, net yield, and coverage
-- Explicit 90-day, 180-day, and 365-day release-window comparison, with 365 days as the default
+- Explicit 7-day, 30-day, 90-day, 180-day, and 365-day release-window comparison, with 365 days as the default
 - Separate executed and announced buyback amounts
 - Explicit protection against bought-and-burned double counting
 - Editable buyback destination factors
@@ -108,7 +108,7 @@ BUYBACKBEAST follows a few strict rules to keep comparisons useful:
 - Use executed amounts for the trailing period. Keep budgets and promises separate.
 - Never count the same bought-and-burned tokens as both buybacks and direct burns.
 - State the period and measurement date for every USD figure.
-- Enter cumulative 90-day, 180-day, and 365-day release values independently. Never estimate a shorter window by prorating the 365-day total.
+- Enter cumulative 7-day, 30-day, 90-day, 180-day, and 365-day release values independently. Never estimate a shorter window by prorating a longer-window total.
 - Value forward unlocks with the same token price used for market capitalization.
 - Record source URLs and disclose estimates or annualization.
 - Treat treasury-held tokens differently from permanently removed supply.
