@@ -32,7 +32,12 @@ import {
   RESEARCH_CANDIDATES,
   type ResearchCandidate,
 } from './data/researchCandidates'
-import { getCoinMarketCapSnapshot } from './data/marketSnapshots'
+import {
+  COIN_MARKET_CAP_SNAPSHOT_TIMESTAMP,
+  COIN_MARKET_CAP_SNAPSHOTS,
+  loadLatestCoinMarketCapSnapshots,
+  type CoinMarketCapSnapshot,
+} from './data/marketSnapshots'
 import { getSourcedCandidateSnapshot } from './data/sourcedSnapshots'
 import { getTokenLogoUrl } from './data/tokenLogos'
 import {
@@ -204,6 +209,23 @@ function formatPct(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return 'NR'
   const sign = value > 0 ? '+' : ''
   return `${sign}${value.toFixed(2)}%`
+}
+
+function formatMarketSnapshotTime(timestamp: string): string {
+  const date = new Date(timestamp)
+  if (!Number.isFinite(date.getTime())) return 'CMC'
+  const day = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(date)
+  const time = new Intl.DateTimeFormat('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'UTC',
+  }).format(date)
+  return `CMC · ${day} ${time}Z`
 }
 
 function formatRatio(value: number | null | undefined, rankable: boolean): string {
@@ -615,6 +637,59 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
   const [destination, setDestination] = useState<'all' | BuybackDestination>('all')
   const [evidence, setEvidence] = useState<'all' | EvidenceLevel>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [marketSnapshots, setMarketSnapshots] = useState<readonly CoinMarketCapSnapshot[]>(
+    COIN_MARKET_CAP_SNAPSHOTS,
+  )
+  const [marketDataState, setMarketDataState] = useState<'loading' | 'live' | 'fallback' | 'stale'>('loading')
+  const latestMarketTimestampRef = useRef(COIN_MARKET_CAP_SNAPSHOT_TIMESTAMP)
+  const marketSnapshotsByCandidate = useMemo(
+    () => new Map(marketSnapshots.map((snapshot) => [snapshot.candidateId, snapshot])),
+    [marketSnapshots],
+  )
+
+  useEffect(() => {
+    let active = true
+    let requestController: AbortController | null = null
+    const refreshMarketCaps = async () => {
+      requestController?.abort()
+      const currentController = new AbortController()
+      requestController = currentController
+      try {
+        const snapshots = await loadLatestCoinMarketCapSnapshots(currentController.signal)
+        if (active && !currentController.signal.aborted) {
+          const nextTimestamp = snapshots[0]?.asOfTimestamp
+          if (nextTimestamp
+            && Date.parse(nextTimestamp) >= Date.parse(latestMarketTimestampRef.current)) {
+            latestMarketTimestampRef.current = nextTimestamp
+            setMarketSnapshots(snapshots)
+            setMarketDataState('live')
+          } else {
+            setMarketDataState('stale')
+          }
+        }
+      } catch {
+        if (active && !currentController.signal.aborted) {
+          setMarketDataState((current) => current === 'live' ? 'stale' : 'fallback')
+        }
+      }
+    }
+
+    void refreshMarketCaps()
+    const intervalId = window.setInterval(refreshMarketCaps, 5 * 60 * 1000)
+    return () => {
+      active = false
+      requestController?.abort()
+      window.clearInterval(intervalId)
+    }
+  }, [])
+  const latestMarketTimestamp = marketSnapshots[0]?.asOfTimestamp
+  const marketDataMessage = marketDataState === 'live' && latestMarketTimestamp
+    ? `CMC market caps refresh hourly. Latest snapshot: ${formatMarketSnapshotTime(latestMarketTimestamp).replace('CMC · ', '')}.`
+    : marketDataState === 'loading'
+      ? 'Loading the latest hourly CMC market-cap snapshot.'
+      : marketDataState === 'stale'
+        ? 'CMC refresh is retrying. Showing the last verified snapshot.'
+        : 'Live CMC update is unavailable. Showing the bundled verified snapshot.'
   const visibleCandidates = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
     return candidates.filter((candidate) => {
@@ -635,7 +710,7 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
           <div className="research-kicker">Source-linked · mechanism-qualified</div>
           <h2 id="research-candidates-title">Value-capture market</h2>
         </div>
-        <p>{candidates.length} assets tracked. Missing values stay pending until dated capture and release data are complete.</p>
+        <p>{candidates.length} assets tracked. {marketDataMessage}</p>
       </div>
 
       <div className="candidate-toolbar">
@@ -697,7 +772,7 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
           <tbody>
             {visibleCandidates.map((candidate) => {
               const snapshot = getSourcedCandidateSnapshot(candidate.id)
-              const marketSnapshot = getCoinMarketCapSnapshot(candidate.id)
+              const marketSnapshot = marketSnapshotsByCandidate.get(candidate.id)
               const marketCap = marketSnapshot?.circulatingMarketCapUsd
               const pressure = getCandidateSnapshotPressure(candidate.id, releaseHorizonDays)
               const expanded = expandedId === candidate.id
@@ -725,7 +800,11 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
                     title={marketSnapshot ? `CoinMarketCap snapshot · ${marketSnapshot.asOfTimestamp}` : undefined}
                   >
                     <span className="candidate-market-value">{marketCap === undefined ? 'Unknown' : formatUsd(marketCap)}</span>
-                    {marketSnapshot && <span className="candidate-market-source">CMC · Sep 30</span>}
+                    {marketSnapshot && (
+                      <span className="candidate-market-source">
+                        {formatMarketSnapshotTime(marketSnapshot.asOfTimestamp)}
+                      </span>
+                    )}
                   </td>
                   <td className="candidate-capture-col">
                     <div className="candidate-capture-cell">
