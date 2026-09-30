@@ -32,6 +32,7 @@ import {
   type ResearchCandidate,
 } from './data/researchCandidates'
 import { getSourcedCandidateSnapshot } from './data/sourcedSnapshots'
+import { getTokenLogoUrl } from './data/tokenLogos'
 import {
   BUYBACK_DESTINATIONS,
   DEFAULT_ADJUSTMENT_FACTORS,
@@ -390,6 +391,36 @@ function monogram(symbol: string): string {
   return symbol.slice(0, 3).toUpperCase()
 }
 
+interface TokenLogoProps {
+  id?: string
+  name: string
+  symbol: string
+}
+
+function TokenLogo({ id, name, symbol }: TokenLogoProps) {
+  const logoUrl = getTokenLogoUrl({ id, name, symbol })
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+
+  if (!logoUrl || failedUrl === logoUrl) {
+    return <div className="token-monogram" aria-hidden="true">{monogram(symbol)}</div>
+  }
+
+  return (
+    <div className="token-logo" aria-hidden="true">
+      <img
+        src={logoUrl}
+        alt=""
+        width={34}
+        height={34}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onError={() => setFailedUrl(logoUrl)}
+      />
+    </div>
+  )
+}
+
 function evidenceTone(evidence: EvidenceLevel): string {
   if (evidence === 'onchain') return 'verified'
   if (evidence === 'official' || evidence === 'third_party') return 'documented'
@@ -541,7 +572,7 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
                   <td className="candidate-rank-col"><span className="rank-badge">–</span></td>
                   <td className="candidate-token-col">
                     <div className="token-cell">
-                      <div className="token-monogram">{monogram(candidate.symbol)}</div>
+                      <TokenLogo id={candidate.id} name={candidate.name} symbol={candidate.symbol} />
                       <div><div className="token-name">{candidate.name}</div><div className="token-symbol">{candidate.symbol} · {dataStatus}</div></div>
                     </div>
                   </td>
@@ -1301,7 +1332,7 @@ function App() {
                         <td><span className={cx('rank-badge', row.rank !== null && row.rank <= 3 && 'top-three')}>{row.rank ?? 'NR'}</span></td>
                         <td className="sticky-cell">
                           <div className="token-cell">
-                            <div className="token-monogram">{monogram(row.input.symbol)}</div>
+                            <TokenLogo id={row.input.id} name={row.input.name} symbol={row.input.symbol} />
                             <div><div className="token-name">{row.input.name}</div><div className="token-symbol">{row.input.symbol}{provisional ? ' · provisional' : ''}</div></div>
                           </div>
                         </td>
@@ -1334,7 +1365,7 @@ function App() {
                   <div className="mobile-rank-head">
                     <div className="mobile-rank-token">
                       <span className={cx('rank-badge', row.rank !== null && row.rank <= 3 && 'top-three')}>{row.rank ?? 'NR'}</span>
-                      <div className="token-monogram">{monogram(row.input.symbol)}</div>
+                      <TokenLogo id={row.input.id} name={row.input.name} symbol={row.input.symbol} />
                       <div><div className="token-name">{row.input.name}</div><div className="token-symbol">{row.input.symbol}{row.input.capturePeriodDays < 365 ? ' · provisional' : ''}</div></div>
                     </div>
                     <div className={cx('mobile-score', (row.metrics.netCaptureYieldPct ?? 0) < 0 && 'negative-text')}><small>{releaseHorizonDays}d net yield</small>{formatPct(row.metrics.netCaptureYieldPct)}</div>
