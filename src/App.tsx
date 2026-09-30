@@ -1537,7 +1537,7 @@ function App() {
       <section className="metrics-grid" aria-label="Dataset metrics">
         <article className="metric-card">
           <div className="metric-label"><span>Tokens ranked</span><Layers3 size={15} /></div>
-          <div className="metric-value">{metrics.rankable}<span style={{ color: 'var(--muted-2)', fontSize: '0.52em' }}> / {ranked.length}</span></div>
+          <div className="metric-value">{metrics.rankable}<span style={{ color: 'var(--muted)', fontSize: '0.6em' }}> / {ranked.length}</span></div>
           <div className="metric-note">Complete forward release data</div>
         </article>
         <article className="metric-card">
