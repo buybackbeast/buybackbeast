@@ -799,7 +799,8 @@ function ResearchCandidates({ candidates, releaseHorizonDays, onReleaseHorizonCh
       </div>
 
       <div className="candidate-toolbar">
-        <div className="horizon-control" role="radiogroup" aria-label="Release window">
+        <div className="horizon-control" role="radiogroup" aria-label="Next-period comparison">
+          <span className="horizon-label">Next</span>
           <div className="horizon-options">
             {RELEASE_HORIZONS.map((days) => (
               <button
