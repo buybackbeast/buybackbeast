@@ -113,8 +113,8 @@ export const CANDIDATE_METRICS = [
     },
     releaseUsd: releases(
       [45_350_000, 45_350_000, 45_350_000, 90_700_000, 181_400_000],
-      'verified',
-      'Onchain-verified 5M UNI quarterly growth-budget tranches valued at $9.07; the allowance is revocable.',
+      'estimate',
+      'Original UNI allocation vesting ended in September 2025. These amounts are discrete 5M UNI quarterly transfers from the governance treasury to the Labs growth budget, valued at $9.07. In this September 30 snapshot, the 7d, 30d, and 90d windows all include the same October 1 event. They are not continuous issuance, the allowance is revocable, and a transfer does not imply a sale.',
     ),
     notes: ['The separate 100M UNI treasury burn is excluded as a one-off.'],
     sourceUrls: [

@@ -53,6 +53,10 @@ describe('research candidate universe', () => {
       buybackDestination: 'burn',
       programStatus: 'active',
     })
+    expect(uniswap?.releaseCaveat).toContain('allocation vesting ended in September 2025')
+    expect(uniswap?.releaseCaveat).toContain('same October 1 event')
+    expect(uniswap?.releaseCaveat).toContain('not continuous issuance')
+    expect(uniswap?.releaseCaveat).toContain('does not imply a sale')
   })
 
   it('keeps candidate identifiers and symbols unique', () => {

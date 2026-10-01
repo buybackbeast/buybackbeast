@@ -51,7 +51,7 @@ export const SOURCED_CANDIDATE_SNAPSHOTS = [
     asOfDate: '2026-09-30',
     valuationPriceUsd: UNISWAP_PRICE_USD,
     releaseData: {
-      // Verified growth-budget schedule after the snapshot: 5M / 5M / 5M / 10M / 20M UNI.
+      // Discrete quarterly growth-budget events after the snapshot: 5M / 5M / 5M / 10M / 20M UNI.
       unlockUsd7d: 5_000_000 * UNISWAP_PRICE_USD,
       unlockUsd30d: 5_000_000 * UNISWAP_PRICE_USD,
       unlockUsd90d: 5_000_000 * UNISWAP_PRICE_USD,
@@ -66,9 +66,9 @@ export const SOURCED_CANDIDATE_SNAPSHOTS = [
       dataDate: '2026-09-30',
     },
     summary:
-      'DefiLlama marks the original UNI vesting schedule 100% unlocked. A separate onchain-verified UNIVesting growth budget schedules 5M, 5M, 5M, 10M, and 20M UNI across the next 7, 30, 90, 180, and 365 days.',
+      'The original UNI allocation vesting ended in September 2025. These values instead aggregate discrete 5M UNI quarterly transfers from the governance treasury to the Labs growth budget within each forward window. In this September 30 snapshot, the 7d, 30d, and 90d windows all include the same October 1 event, not three different transfers. They are not continuous minting, the allowance is revocable, and a transfer does not imply a sale.',
     methodology:
-      'Uses the half-open interval (snapshot date, horizon end]. At Ethereum block 26,091,194 the contract still had a 5M UNI quarterly amount, a July 1 last-unlock boundary, and 25M UNI of owner allowance. The $9.07 valuation price is retained only to reproduce the forward release values. Releases remain revocable.',
+      'Uses the half-open interval (snapshot date, horizon end] and adds each whole quarterly event only when it falls inside that interval; no amount is prorated by day. At Ethereum block 26,091,194 the contract still had a 5M UNI quarterly amount, a July 1 last-unlock boundary, and 25M UNI of owner allowance. The $9.07 valuation price is retained only to reproduce the forward pressure scenario.',
     onchainVerification: {
       contractAddress: '0xCa046A83EDB78F74aE338bb5A291bF6FdAc9e1D2',
       blockNumber: 26_091_194,
