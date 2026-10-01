@@ -75,6 +75,25 @@ describe('candidate metrics', () => {
     }
   })
 
+  it('treats UNI growth-budget transfers as discrete estimated pressure', () => {
+    const uniswap = getCandidateMetricSnapshot('uniswap')!
+
+    expect([7, 30, 90, 180, 365].map((horizon) => (
+      uniswap.releaseUsd[horizon as 7 | 30 | 90 | 180 | 365].usd
+    ))).toEqual([
+      45_350_000,
+      45_350_000,
+      45_350_000,
+      90_700_000,
+      181_400_000,
+    ])
+    for (const horizon of [7, 30, 90, 180, 365] as const) {
+      expect(uniswap.releaseUsd[horizon].quality).toBe('estimate')
+      expect(uniswap.releaseUsd[horizon].note).toContain('not continuous issuance')
+      expect(uniswap.releaseUsd[horizon].note).toContain('does not imply a sale')
+    }
+  })
+
   it('uses gross recurring value return without applying a destination discount', () => {
     const cake = calculateCandidateMetricsById('pancakeswap', 30, 864_027_941)!
     const cow = calculateCandidateMetricsById('cow-protocol', 365, 94_518_301)!

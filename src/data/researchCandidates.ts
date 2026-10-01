@@ -47,7 +47,7 @@ export const RESEARCH_CANDIDATES = [
     excludedOneOff:
       'The 100M UNI retroactive treasury burn is non-recurring and must remain outside the recurring score.',
     releaseCaveat:
-      'DefiLlama marks the original UNI allocation vesting 100% unlocked. At the September 30 snapshot, the separate growth-budget contract still had a 5M UNI quarterly amount and 25M UNI allowance. Its allowance can be revoked, so scheduled tranches are forward pressure, not guaranteed sales.',
+      'The original UNI allocation vesting ended in September 2025. The values shown are instead discrete 5M UNI quarterly transfers from the governance treasury to the Labs growth budget, not continuous issuance. In the September 30 snapshot, the 7d, 30d, and 90d windows all contain the same October 1 event. The contract had 25M UNI of allowance, but that allowance is revocable and a transfer does not imply a sale.',
     sources: [
       {
         label: 'Executed UNIfication proposal',

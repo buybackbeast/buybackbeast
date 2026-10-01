@@ -27,6 +27,10 @@ describe('sourced candidate snapshots', () => {
     expect(snapshot?.releaseData.unlockUsd90d).toBe(5_000_000 * 9.07)
     expect(snapshot?.releaseData.unlockUsd180d).toBe(10_000_000 * 9.07)
     expect(snapshot?.releaseData.unlockUsd365d).toBe(20_000_000 * 9.07)
+    expect(snapshot?.summary).toContain('allocation vesting ended in September 2025')
+    expect(snapshot?.summary).toContain('same October 1 event')
+    expect(snapshot?.summary).toContain('not continuous minting')
+    expect(snapshot?.methodology).toContain('no amount is prorated by day')
     expect(snapshot?.sources.map((source) => source.url)).toEqual(expect.arrayContaining([
       'https://defillama.com/unlocks/uniswap',
       'https://dune.com/uniswaplabs/uni-burn-tracker-l1l2',
